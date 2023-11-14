@@ -1,7 +1,7 @@
 
 import { createDrawerNavigator } from '@react-navigation/drawer'
 import React from 'react'
-import Home from '../screens/Home'
+import Home from '../screens/Inicio'
 import StackArtilharia from '../screens/artilharia/StackArtilharia'
 import StackEquipes from '../screens/equipes/StackEquipes'
 import StackJogadores from '../screens/jogadores/StackJogadores'
