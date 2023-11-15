@@ -4,10 +4,9 @@ import { FlatList, StyleSheet, View } from 'react-native'
 import { Button, Card, Dialog, FAB, MD3Colors, Portal, Text } from 'react-native-paper'
 import Toast from 'react-native-toast-message'
 
-
 export default function ListaEquipes({ navigation, route }) {
 
-  const [equipes, setEquipes] = useState([])
+  const [equipes, setEquipes] = useState([]);
   const [showModalExcluirUsuario, setShowModalExcluirUsuario] = useState(false)
   const [equipeASerExcluida, setEquipeASerExcluida] = useState(null)
 
@@ -18,7 +17,6 @@ export default function ListaEquipes({ navigation, route }) {
 
   async function loadEquipes() {
     const response = await AsyncStorage.getItem('equipes')
-    console.log('equipe resgatada: ',response)
     const equipesStorage = response ? JSON.parse(response) : []
     setEquipes(equipesStorage)
   }
@@ -28,14 +26,13 @@ export default function ListaEquipes({ navigation, route }) {
   const hideModal = () => setShowModalExcluirUsuario(false);
 
   async function adicionarEquipe(equipe) {
-    let novaListaEquipes = equipes
-    novaListaEquipes.push(equipe)
+    const novaListaEquipes = [...equipes, equipe];
     await AsyncStorage.setItem('equipes', JSON.stringify(novaListaEquipes));
     setEquipes(novaListaEquipes)
   }
 
   async function editarEquipe(equipeAntiga, novosDados) {
-    console.log('EQUIPE ANTIGA -> ', equipeAntiga)
+    console.log('equipe ANTIGA -> ', equipeAntiga)
     console.log('DADOS NOVOS -> ', novosDados)
 
     const novaListaEquipes = equipes.map(equipe => {

@@ -1,5 +1,5 @@
 import { Formik } from 'formik'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Button, Text, TextInput } from 'react-native-paper'
 import Toast from 'react-native-toast-message'
@@ -7,7 +7,12 @@ import * as Yup from 'yup'
 
 export default function FormEquipes({ navigation, route }) {
 
-    const { acao, equipe: equipeAntiga } = route.params
+  const { acao, equipe: equipeAntiga } = route.params || {};
+
+    const [nome, setNome] = useState('');
+    const [titulos, setTitulos] = useState('');
+    const [jogadores, setJogadores] = useState('');
+    const [paises, setPaises] = useState('');
 
     const validationSchema = Yup.object().shape({
         nome: Yup.string().required(),
@@ -27,7 +32,7 @@ export default function FormEquipes({ navigation, route }) {
             setPaises(equipeAntiga.paises)
         }
 
-    }, [])
+    }, [[equipeAntiga]])
 
 
     function salvar(novaEquipe) {
@@ -53,13 +58,12 @@ export default function FormEquipes({ navigation, route }) {
 
             <Text variant='titleLarge' style={styles.title} >{equipeAntiga ? 'Editar equipe' : 'Adicionar equipe'}</Text>
 
-
             <Formik
                 initialValues={{
-                    nome: '',
-                    titulos: '',
-                    jogadores: '',
-                    paises: ''
+                  nome: equipeAntiga ? equipeAntiga.nome : '',
+                  titulos: equipeAntiga ? equipeAntiga.titulos : '',
+                  jogadores: equipeAntiga ? equipeAntiga.jogadores : '',
+                  paises: equipeAntiga ? equipeAntiga.paises : ''
                 }}
                 validationSchema={validationSchema}
                 onSubmit={values => salvar(values)}
