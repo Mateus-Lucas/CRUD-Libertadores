@@ -1,109 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, HelperText, Text, TextInput } from 'react-native-paper';
+import { Button, Text, TextInput } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import * as Yup from 'yup';
-import axios from 'axios';
+import { Formik } from 'formik';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function FormEquipes({ navigation, route }) {
-  const { acao } = route.params;
-  const equipeAntiga = route.params.equipe;
 
-  const [nome, setNome] = useState('');
-  const [titulos, setTitulos] = useState('');
-  const [jogadores, setJogadores] = useState('');
-  const [paises, setPaises] = useState([]);
-  const [paisSelecionado, setPaisSelecionado] = useState('Benin');
-  const [countryInfo, setCountryInfo] = useState(null);
-  const [paisesFiltrados, setPaisesFiltrados] = useState([]);
-  const [termoPesquisa, setTermoPesquisa] = useState('');
-  const [resultadosPesquisa, setResultadosPesquisa] = useState([]);
+  const { acao, equipes: equipesAntiga } = route.params;
   const [showMensagemErro, setShowMensagemErro] = useState(false);
 
   const validationSchema = Yup.object().shape({
     nome: Yup.string().required('Campo obrigatório'),
     titulos: Yup.number().required('Campo obrigatório'),
     jogadores: Yup.number().max(30, 'Deve conter no máximo 30 jogadores').required('Campo obrigatório'),
+    paises: Yup.string().required('Campo obrigatório'),
   });
 
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Button onPress={() => acao(acao)}>
-          Algum Texto
-        </Button>
-      ),
-    });
-  }, [acao]);
-
-  useEffect(() => {
-    const carregarPaises = async () => {
-      try {
-        const response = await axios.get('https://restcountries.com/v3.1/all');
-        const countries = response.data.map((country) => ({
-          nome: country.name.common,
-        }));
-        setPaises(countries);
-        setPaisesFiltrados(countries);
-      } catch (error) {
-        console.error('Erro ao carregar a lista de países', error);
-      }
-    };
-
-    carregarPaises();
-  }, []);
-
-  useEffect(() => {
-    if (equipeAntiga) {
-      setNome(equipeAntiga.nome);
-      setTitulos(equipeAntiga.titulos);
-      setJogadores(equipeAntiga.jogadores);
-    }
-  }, [equipeAntiga]);
-
-  const handleInputChange = (text) => {
-    setTermoPesquisa(text);
-    const resultados = paises.filter((country) =>
-      country.nome.toLowerCase().includes(text.toLowerCase())
-    );
-    setPaisesFiltrados(resultados);
-    setResultadosPesquisa(resultados);
-  };
-
-  async function salvar() {
+  function cadastrar(values) {
     try {
-      await validationSchema.validate({
-        nome,
-        titulos,
-        jogadores,
-      });
-
-      setShowMensagemErro(false);
-
-      const novaequipe = {
-        nome,
-        titulos,
-        jogadores,
-        pais: paisSelecionado,
-      };
-
-      if (equipeAntiga) {
-        acao(equipeAntiga, novaequipe);
-      } else {
-        acao(novaequipe);
-      }
-
-      Toast.show({
-        type: 'success',
-        text1: 'Equipe salva com sucesso!',
-      });
-
+      console.log('equipes: ', values)
       navigation.goBack();
     } catch (error) {
       setShowMensagemErro(true);
       Toast.show({
         type: 'error',
-        text1: 'Erro ao salvar a equipe',
+        text1: 'Erro ao salvar a equipes',
         text2: error.message,
       });
     }
@@ -112,70 +35,123 @@ export default function FormEquipes({ navigation, route }) {
   return (
     <View style={styles.container}>
       <Text variant='titleLarge' style={styles.title}>
-        {equipeAntiga ? 'Editar Equipe' : 'Adicionar Equipe'}
+        {equipesAntiga ? 'Editar equipes' : 'Adicionar equipes'}
       </Text>
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          label={'Nome'}
-          mode='outlined'
-          value={nome}
-          onChangeText={(text) => setNome(text)}
-          onFocus={() => setShowMensagemErro(false)}
-        />
+      <Formik
+        initialValues={{
+          nome: equipesAntiga ? equipesAntiga.nome : '',
+          titulos: equipesAntiga ? String(equipesAntiga.titulos) : '',
+          jogadores: equipesAntiga ? String(equipesAntiga.jogadores) : '',
+          paises: equipesAntiga ? equipesAntiga.paises : '',
+        }}
+        validationSchema={validationSchema}
+        onSubmit={async (values) => {
+          try {
+            await AsyncStorage.setItem('equipes', JSON.stringify(values));
+            console.log('Dados salvos no AsyncStorage:', values);
+            cadastrar(values);
+          } catch (error) {
+            setShowMensagemErro(true);
+            Toast.show({
+              type: 'error',
+              text1: 'Erro ao salvar a equipe',
+              text2: error.message,
+            });
+          }
+        }}
+      >
 
-        <TextInput
-          style={styles.input}
-          label={'Títulos'}
-          mode='outlined'
-          keyboardType='numeric'
-          value={titulos}
-          onChangeText={(text) => setTitulos(text)}
-          onFocus={() => setShowMensagemErro(false)}
-          type={'only-numbers'}
-        />
+        {({
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          values,
+          errors,
+          touched,
+          setFieldTouched,
+          setFieldValue,
+        }) => (
+          <>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                label={'Nome'}
+                placeholder='Ex:. Flamengo'
+                mode='outlined'
+                value={values.nome}
+                onChangeText={handleChange('nome')}
+                onBlur={() => setFieldTouched('nome')}
+                error={touched.nome && errors.nome}
+              />
+              {touched.nome && errors.nome && (
+                <Text style={styles.errorText}>{errors.nome}</Text>
+              )}
 
-        <TextInput
-          style={styles.input}
-          label={'Jogadores'}
-          mode='outlined'
-          keyboardType='numeric'
-          value={jogadores}
-          onChangeText={(text) => setJogadores(text)}
-          onFocus={() => setShowMensagemErro(false)}
-          type={'only-numbers'}
-        />
-        <HelperText type="error" visible={parseInt(jogadores, 10) <= 0 || parseInt(jogadores, 10) > 30}>
-          Os times podem cadastrar apenas 30 jogadores
-        </HelperText>
+              <TextInput
+                style={styles.input}
+                label={'Títulos'}
+                mode='outlined'
+                placeholder='0'
+                keyboardType='numeric'
+                value={values.titulos}
+                onChangeText={(text) => setFieldValue('titulos', text)}
+                onBlur={() => setFieldTouched('titulos')}
+                error={touched.titulos && errors.titulos}
+              />
+              {touched.titulos && errors.titulos && (
+                <Text style={styles.errorText}>{errors.titulos}</Text>
+              )}
 
-        <TextInput
-          label="Pesquisar País"
-          mode="outlined"
-          value={termoPesquisa}
-          onChangeText={handleInputChange}
-        />
+              <TextInput
+                style={styles.input}
+                label={'Jogadores'}
+                mode='outlined'
+                keyboardType='numeric'
+                value={values.jogadores}
+                onChangeText={(text) => setFieldValue('jogadores', text)}
+                onBlur={() => setFieldTouched('jogadores')}
+                error={touched.jogadores && errors.jogadores}
+              />
+              {touched.jogadores && errors.jogadores && (
+                <Text style={styles.errorText}>{errors.jogadores}</Text>
+              )}
 
-        {/* Resultados da pesquisa */}
-        {resultadosPesquisa.map((result) => (
-          <Text key={result.nome}>{result.nome}</Text>
-        ))}
+              <TextInput
+                style={styles.input}
+                label={'País'}
+                mode='outlined'
+                value={values.paises}
+                onChangeText={handleChange('paises')}
+                onBlur={() => setFieldTouched('paises')}
+                error={touched.paises && errors.paises}
+              />
+              {touched.paises && errors.paises && (
+                <Text style={styles.errorText}>{errors.paises}</Text>
+              )}
 
-        {showMensagemErro && (
-          <Text style={{ color: 'red', textAlign: 'center' }}>Preencha todos os campos!</Text>
+              {errors.showMensagemErro && (
+                <Text style={styles.errorText}>
+                  Preencha todos os campos!
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <Button
+                style={styles.button}
+                mode='contained-tonal'
+                onPress={() => navigation.goBack()}
+              >
+                Voltar
+              </Button>
+
+              <Button mode='contained' onPress={handleSubmit}>Cadastrar</Button>
+
+            </View>
+          </>
         )}
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <Button style={styles.button} mode='contained-tonal' onPress={() => navigation.goBack()}>
-          Voltar
-        </Button>
-
-        <Button style={styles.button} mode='contained' onPress={salvar}>
-          Salvar
-        </Button>
-      </View>
+      </Formik>
     </View>
   );
 }
@@ -205,5 +181,10 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 5,
   },
 });

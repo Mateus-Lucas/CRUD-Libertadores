@@ -7,7 +7,7 @@ import Toast from 'react-native-toast-message'
 export default function ListaEquipes({ navigation, route }) {
 
   const [equipes, setEquipes] = useState([])
-  const [showModalExcluirUsuario, setShowModalExcluirUsuario] = useState(false)
+  const [showModalExcluirEquipe, setShowModalExcluirEquipe] = useState(false)
   const [equipeASerExcluida, setEquipeASerExcluida] = useState(null)
 
   useEffect(() => {
@@ -15,44 +15,51 @@ export default function ListaEquipes({ navigation, route }) {
   }, [])
 
   async function loadEquipes() {
-    const response = await AsyncStorage.getItem('equipes')
-    console.log("🚀 ~ file: ListaEquipes.js:21 ~ loadequipes ~ response:", response)
-    const equipesStorage = response ? JSON.parse(response) : []
-    setEquipes(equipesStorage)
+    console.log('loadEquipes está sendo chamado');
+    const response = await AsyncStorage.getItem('equipes');
+    const equipesStorage = response ? JSON.parse(response) : [];
+    setEquipes(equipesStorage);
+    console.log('equipes: ', response)
+  }  
+
+  const showModal = () => setShowModalExcluirEquipe(true);
+
+  const hideModal = () => setShowModalExcluirEquipe(false);
+
+  async function adicionarEquipe(equipes) {
+    try {
+      let novaListaEquipes = equipes
+      novaListaEquipes.push(equipes)
+      await AsyncStorage.setItem('equipes', JSON.stringify(novaListaEquipes));
+      console.log('Dados salvos com sucesso:', novaListaEquipes);
+      setEquipes(novaListaEquipes);
+      navigation.navigate('ListaEquipes');
+    } catch (error) {
+      console.error('Erro ao salvar os dados:', error);
+    }
   }
-
-  const showModal = () => setShowModalExcluirUsuario(true);
-
-  const hideModal = () => setShowModalExcluirUsuario(false);
-
-  async function adicionarEquipe(equipe) {
-    let novaListaequipes = equipes
-    novaListaequipes.push(equipe)
-    await AsyncStorage.setItem('equipes', JSON.stringify(novaListaequipes));
-    setEquipes(novaListaequipes)
-  }
-
+    
   async function editarEquipe(equipeAntiga, novosDados) {
     console.log('equipe ANTIGA -> ', equipeAntiga)
     console.log('DADOS NOVOS -> ', novosDados)
 
-    const novaListaequipes = equipes.map(equipe => {
-      if (equipe == equipeAntiga) {
+    const novaListaEquipes = equipes.map(equipe => {
+      if (equipes == equipeAntiga) {
         return novosDados
       } else {
-        return equipe
+        return equipes
       }
     })
 
-    await AsyncStorage.setItem('equipes', JSON.stringify(novaListaequipes))
-    setEquipes(novaListaequipes)
+    await AsyncStorage.setItem('equipes', JSON.stringify(novaListaEquipes))
+    setEquipes(novaListaEquipes)
 
   }
 
   async function excluirEquipe(equipe) {
-    const novaListaequipes = equipes.filter(p => p !== equipe)
-    await AsyncStorage.setItem('equipes', JSON.stringify(novaListaequipes))
-    setEquipes(novaListaequipes)
+    const novaListaEquipes = equipes.filter(p => p !== equipe)
+    await AsyncStorage.setItem('equipes', JSON.stringify(novaListaEquipes))
+    setEquipes(novaListaEquipes)
     Toast.show({
       type: 'success',
       text1: 'Equipe excluida com sucesso!'
@@ -89,7 +96,7 @@ export default function ListaEquipes({ navigation, route }) {
               <View style={{ flex: 1 }}>
                 <Text variant='titleMedium'>{item?.nome}</Text>
                 <Text variant='bodyLarge'>Nome: {item?.nome}</Text>
-                <Text variant='bodyLarge'>País: {item?.pais}</Text>
+                <Text variant='bodyLarge'>País: {item?.paises}</Text>
                 <Text variant='bodyLarge'>jogadores: {item.jogadores}</Text>
                 <Text variant='bodyLarge'>Títulos: {item.titulos}</Text>
               </View>
@@ -118,7 +125,7 @@ export default function ListaEquipes({ navigation, route }) {
 
 
       <Portal>
-        <Dialog visible={showModalExcluirUsuario} onDismiss={hideModal}>
+        <Dialog visible={showModalExcluirEquipe} onDismiss={hideModal}>
           <Dialog.Title>Atenção!</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">Tem certeza que deseja excluir este usuário?</Text>
