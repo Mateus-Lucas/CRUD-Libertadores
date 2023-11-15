@@ -1,53 +1,48 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import React, { useEffect, useState } from 'react'
-import { FlatList, Image, StyleSheet, View } from 'react-native'
+import { FlatList, StyleSheet, View } from 'react-native'
 import { Button, Card, Dialog, FAB, MD3Colors, Portal, Text } from 'react-native-paper'
 import Toast from 'react-native-toast-message'
+
 
 export default function ListaEquipes({ navigation, route }) {
 
   const [equipes, setEquipes] = useState([])
-  const [showModalExcluirEquipe, setShowModalExcluirEquipe] = useState(false)
+  const [showModalExcluirUsuario, setShowModalExcluirUsuario] = useState(false)
   const [equipeASerExcluida, setEquipeASerExcluida] = useState(null)
+
 
   useEffect(() => {
     loadEquipes()
   }, [])
 
   async function loadEquipes() {
-    console.log('loadEquipes está sendo chamado');
-    const response = await AsyncStorage.getItem('equipes');
-    const equipesStorage = response ? JSON.parse(response) : [];
-    setEquipes(equipesStorage);
-    console.log('equipes: ', response)
-  }  
-
-  const showModal = () => setShowModalExcluirEquipe(true);
-
-  const hideModal = () => setShowModalExcluirEquipe(false);
-
-  async function adicionarEquipe(equipes) {
-    try {
-      let novaListaEquipes = equipes
-      novaListaEquipes.push(equipes)
-      await AsyncStorage.setItem('equipes', JSON.stringify(novaListaEquipes));
-      console.log('Dados salvos com sucesso:', novaListaEquipes);
-      setEquipes(novaListaEquipes);
-      navigation.navigate('ListaEquipes');
-    } catch (error) {
-      console.error('Erro ao salvar os dados:', error);
-    }
+    const response = await AsyncStorage.getItem('equipes')
+    console.log('equipe resgatada: ',response)
+    const equipesStorage = response ? JSON.parse(response) : []
+    setEquipes(equipesStorage)
   }
-    
+
+  const showModal = () => setShowModalExcluirUsuario(true);
+
+  const hideModal = () => setShowModalExcluirUsuario(false);
+
+  async function adicionarEquipe(equipe) {
+    let novaListaEquipes = equipes
+    novaListaEquipes.push(equipe)
+    await AsyncStorage.setItem('equipes', JSON.stringify(novaListaEquipes));
+    setEquipes(novaListaEquipes)
+  }
+
   async function editarEquipe(equipeAntiga, novosDados) {
-    console.log('equipe ANTIGA -> ', equipeAntiga)
+    console.log('EQUIPE ANTIGA -> ', equipeAntiga)
     console.log('DADOS NOVOS -> ', novosDados)
 
     const novaListaEquipes = equipes.map(equipe => {
-      if (equipes == equipeAntiga) {
+      if (equipe == equipeAntiga) {
         return novosDados
       } else {
-        return equipes
+        return equipe
       }
     })
 
@@ -62,7 +57,7 @@ export default function ListaEquipes({ navigation, route }) {
     setEquipes(novaListaEquipes)
     Toast.show({
       type: 'success',
-      text1: 'Equipe excluida com sucesso!'
+      text1: 'equipe excluida com sucesso!'
     })
   }
 
@@ -74,11 +69,6 @@ export default function ListaEquipes({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-
-      <Image
-        source={require('../../img/equipes.jpg')} // Adicione um logotipo da Libertadores ou imagem relevante
-        style={styles.logo}
-      />
 
       <Text variant='titleLarge' style={styles.title} >Lista de equipes</Text>
 
@@ -95,11 +85,15 @@ export default function ListaEquipes({ navigation, route }) {
             >
               <View style={{ flex: 1 }}>
                 <Text variant='titleMedium'>{item?.nome}</Text>
-                <Text variant='bodyLarge'>Nome: {item?.nome}</Text>
-                <Text variant='bodyLarge'>País: {item?.paises}</Text>
-                <Text variant='bodyLarge'>jogadores: {item.jogadores}</Text>
-                <Text variant='bodyLarge'>Títulos: {item.titulos}</Text>
+                <Text variant='bodyLarge'>Idade: {item?.idade}</Text>
+                <Text variant='bodyLarge'>Altura: {item?.altura} cm</Text>
+                <Text variant='bodyLarge'>Peso: {item.peso} kg</Text>
               </View>
+              <View style={{ flex: 1 }}>
+                <Text variant='titleMedium'>IMC</Text>
+                <Text variant='bodyLarge'>{getImc(item)}</Text>
+              </View>
+
 
             </Card.Content>
             <Card.Actions>
@@ -117,6 +111,7 @@ export default function ListaEquipes({ navigation, route }) {
         )}
       />
 
+      {/* Botão Flutuante */}
       <FAB
         icon="plus"
         style={styles.fab}
@@ -124,8 +119,9 @@ export default function ListaEquipes({ navigation, route }) {
       />
 
 
+      {/* Modal Excluir Usuário */}
       <Portal>
-        <Dialog visible={showModalExcluirEquipe} onDismiss={hideModal}>
+        <Dialog visible={showModalExcluirUsuario} onDismiss={hideModal}>
           <Dialog.Title>Atenção!</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">Tem certeza que deseja excluir este usuário?</Text>
@@ -170,9 +166,5 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     paddingBottom: 15
-  },
-  logo: {
-    width: 400,
-    height: 320,
-  },
+  }
 })
