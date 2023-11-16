@@ -38,27 +38,54 @@ export default function Jogadores() {
 
     setEquipes(equipesMock);
     carregarDadosDoArmazenamento();
+    carregarDadosDoArmazenamentoEquipes();
   }, []);
+
+  const carregarDadosDoArmazenamentoEquipes = async () => {
+    try {
+      const dadosArmazenados = await AsyncStorage.getItem('formData');
+      console.log('Conteúdo do AsyncStorage (formData):', dadosArmazenados);
+
+      // ...
+      if (dadosArmazenados) {
+        const dadosParseados = JSON.parse(dadosArmazenados);
+        console.log('Dados parseados:', dadosParseados);
+
+        if (Array.isArray(dadosParseados)) {
+          const nomesEquipes = dadosParseados.map((item) => item.nome);
+          console.log('Nomes de equipes:', nomesEquipes);
+
+          const equipesUnicas = [...new Set(nomesEquipes)];
+          console.log('Equipes únicas:', equipesUnicas);
+
+          setEquipeNomes(equipesUnicas);
+        }
+      }
+      // ...
+
+    } catch (erro) {
+      console.error('Erro ao carregar os dados do AsyncStorage:', erro);
+    }
+  };
 
   const carregarDadosDoArmazenamento = async () => {
     try {
-      const dadosArmazenados = await AsyncStorage.getItem('formData');
+      const dadosArmazenados = await AsyncStorage.getItem('formDataJogadores');
       console.log('Conteúdo do AsyncStorage (formDataJogadores):', dadosArmazenados);
 
       if (dadosArmazenados) {
         const dadosParseados = JSON.parse(dadosArmazenados);
 
         if (Array.isArray(dadosParseados)) {
-          const nomesEquipes = dadosParseados.map((item) => item.nome);
-          const equipesUnicas = [...new Set(nomesEquipes)];
-          console.log('Nomes de equipes:', nomesEquipes);
-          setEquipeNomes(equipesUnicas);
+          // Atualizar o estado local com os dados carregados
+          setData(dadosParseados);
         }
       }
     } catch (erro) {
       console.error('Erro ao carregar os dados do AsyncStorage:', erro);
     }
   };
+
 
   const adicionarJogador = async (jogador) => {
     try {
@@ -67,8 +94,17 @@ export default function Jogadores() {
         id: `jogador_${data.length + 1}_${Date.now()}`,
       };
 
-      setData([...data, novoJogador]);
+      // Atualizar o estado local com o novo jogador
+      setData((prevData) => [...prevData, novoJogador]);
+
+      // Salvar os dados atualizados no AsyncStorage
       await AsyncStorage.setItem('formDataJogadores', JSON.stringify([...data, novoJogador]));
+
+      // Atualizar a lista de equipes no estado (caso necessário)
+      // ...
+
+      // Atualizar a lista de nomes de equipes no estado (caso necessário)
+      // ...
 
       Toast.show({
         type: 'success',
@@ -82,6 +118,8 @@ export default function Jogadores() {
       });
     }
   };
+
+
 
   const excluirItem = async (item) => {
     Alert.alert(
@@ -307,11 +345,11 @@ export default function Jogadores() {
                 <Text>Idade: {item.idade}</Text>
                 <Text>Altura: {item.altura}</Text>
                 <Text>Nacionalidade: {item.nacionalidade}</Text>
-              <Card.Actions>
-                <Button onPress={() => excluirItem(item)}>
-                  <Icon name="trash" size={20} color="red" />
-                </Button>
-              </Card.Actions>
+                <Card.Actions>
+                  <Button onPress={() => excluirItem(item)}>
+                    <Icon name="trash" size={20} color="red" />
+                  </Button>
+                </Card.Actions>
               </Card.Content>
 
             </Card>
