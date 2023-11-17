@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import fundo from '../../img/fundo.jpg'
-export default function Equipes() {
+export default function Artilharia() {
   const [modalVisible, setModalVisible] = useState(false);
   const [data, setData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -108,7 +108,7 @@ export default function Equipes() {
             const dadosAtualizados = data.filter((i) => i.id !== item.id);
             setData(dadosAtualizados);
             console.log('Dados após exclusão:', dadosAtualizados);
-            await AsyncStorage.setItem('equipes', JSON.stringify(dadosAtualizados));
+            await AsyncStorage.setItem('formData', JSON.stringify(dadosAtualizados));
             Toast.show({
               type: 'success',
               text1: 'Item excluído com sucesso!',

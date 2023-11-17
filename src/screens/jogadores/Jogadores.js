@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, FlatList, TouchableOpacity, Modal, StyleSheet, ImageBackground, Alert } from 'react-native';
+import {
+  View,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+  ImageBackground,
+  Alert,
+} from 'react-native';
 import { Button, Text, TextInput, Card, FAB } from 'react-native-paper';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
@@ -10,15 +18,15 @@ import { Picker } from '@react-native-picker/picker';
 import { TextInputMask } from 'react-native-masked-text';
 import LinearGradient from 'react-native-linear-gradient';
 
-import fundo from '../../img/fundo.jpg'
+import fundo from '../../img/fundo.jpg';
 import { ScrollView } from 'react-native-gesture-handler';
 
 export default function Jogadores() {
   const [modalVisible, setModalVisible] = useState(false);
   const [data, setData] = useState([]);
-  const [equipes, setEquipes] = useState([]);
   const [selectedEquipe, setSelectedEquipe] = useState('');
   const [equipeNomes, setEquipeNomes] = useState([]);
+  const [editPlayerData, setEditPlayerData] = useState(null);
 
   const validationSchema = Yup.object().shape({
     nome: Yup.string().required('O nome é obrigatório'),
@@ -30,15 +38,8 @@ export default function Jogadores() {
   });
 
   useEffect(() => {
-    const equipesMock = [
-      { id: '1', nome: 'Equipe A' },
-      { id: '2', nome: 'Equipe B' },
-      // ... outras equipes
-    ];
-
-    setEquipes(equipesMock);
-    carregarDadosDoArmazenamento();
     carregarDadosDoArmazenamentoEquipes();
+    carregarDadosDoArmazenamentoJogadores();
   }, []);
 
   const carregarDadosDoArmazenamentoEquipes = async () => {
@@ -46,7 +47,6 @@ export default function Jogadores() {
       const dadosArmazenados = await AsyncStorage.getItem('formData');
       console.log('Conteúdo do AsyncStorage (formData):', dadosArmazenados);
 
-      // ...
       if (dadosArmazenados) {
         const dadosParseados = JSON.parse(dadosArmazenados);
         console.log('Dados parseados:', dadosParseados);
@@ -61,14 +61,12 @@ export default function Jogadores() {
           setEquipeNomes(equipesUnicas);
         }
       }
-      // ...
-
     } catch (erro) {
       console.error('Erro ao carregar os dados do AsyncStorage:', erro);
     }
   };
 
-  const carregarDadosDoArmazenamento = async () => {
+  const carregarDadosDoArmazenamentoJogadores = async () => {
     try {
       const dadosArmazenados = await AsyncStorage.getItem('formDataJogadores');
       console.log('Conteúdo do AsyncStorage (formDataJogadores):', dadosArmazenados);
@@ -77,7 +75,6 @@ export default function Jogadores() {
         const dadosParseados = JSON.parse(dadosArmazenados);
 
         if (Array.isArray(dadosParseados)) {
-          // Atualizar o estado local com os dados carregados
           setData(dadosParseados);
         }
       }
@@ -86,7 +83,6 @@ export default function Jogadores() {
     }
   };
 
-
   const adicionarJogador = async (jogador) => {
     try {
       const novoJogador = {
@@ -94,17 +90,9 @@ export default function Jogadores() {
         id: `jogador_${data.length + 1}_${Date.now()}`,
       };
 
-      // Atualizar o estado local com o novo jogador
       setData((prevData) => [...prevData, novoJogador]);
 
-      // Salvar os dados atualizados no AsyncStorage
       await AsyncStorage.setItem('formDataJogadores', JSON.stringify([...data, novoJogador]));
-
-      // Atualizar a lista de equipes no estado (caso necessário)
-      // ...
-
-      // Atualizar a lista de nomes de equipes no estado (caso necessário)
-      // ...
 
       Toast.show({
         type: 'success',
@@ -118,8 +106,6 @@ export default function Jogadores() {
       });
     }
   };
-
-
 
   const excluirItem = async (item) => {
     Alert.alert(
@@ -136,7 +122,7 @@ export default function Jogadores() {
             const dadosAtualizados = data.filter((i) => i.id !== item.id);
             setData(dadosAtualizados);
             console.log('Dados após exclusão:', dadosAtualizados);
-            await AsyncStorage.setItem('formData', JSON.stringify(dadosAtualizados));
+            await AsyncStorage.setItem('formDataJogadores', JSON.stringify(dadosAtualizados));
             Toast.show({
               type: 'success',
               text1: 'Item excluído com sucesso!',
@@ -148,7 +134,35 @@ export default function Jogadores() {
     );
   };
 
-  const ModalFormulario = ({ visivel, aoFechar }) => {
+  const editarItem = (item) => {
+    setEditPlayerData(item);
+    setModalVisible(true);
+  };
+
+  const handleUpdatePlayer = async (updatedPlayer) => {
+    try {
+      const updatedData = data.map((item) =>
+        item.id === updatedPlayer.id ? updatedPlayer : item
+      );
+
+      setData(updatedData);
+
+      await AsyncStorage.setItem('formDataJogadores', JSON.stringify(updatedData));
+
+      Toast.show({
+        type: 'success',
+        text1: 'Jogador atualizado com sucesso!',
+      });
+    } catch (erro) {
+      console.error('Erro ao atualizar o jogador:', erro);
+      Toast.show({
+        type: 'error',
+        text1: 'Erro ao atualizar o jogador. Tente novamente.',
+      });
+    }
+  };
+
+  const ModalFormulario = ({ visivel, aoFechar, editPlayerData }) => {
     return (
       <Modal visible={visivel} animationType="slide" onRequestClose={aoFechar}>
         <ImageBackground
@@ -157,9 +171,9 @@ export default function Jogadores() {
           style={{ flex: 1 }}
         >
           <ScrollView style={styles.container}>
-            <Text style={styles.title}>Novo Jogador</Text>
+            <Text style={styles.title}>{editPlayerData ? 'Editar Jogador' : 'Novo Jogador'}</Text>
             <Formik
-              initialValues={{
+              initialValues={editPlayerData || {
                 nome: '',
                 equipe: '',
                 posicao: '',
@@ -170,14 +184,16 @@ export default function Jogadores() {
               }}
               validationSchema={validationSchema}
               onSubmit={(valores) => {
-                adicionarJogador({ ...valores, equipe: selectedEquipe });
+                if (editPlayerData) {
+                  handleUpdatePlayer({ ...valores, equipe: selectedEquipe });
+                } else {
+                  adicionarJogador({ ...valores, equipe: selectedEquipe });
+                }
                 aoFechar();
               }}
-
             >
               {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <View>
-
                   <TextInput
                     label="Nome"
                     onChangeText={handleChange('nome')}
@@ -186,7 +202,6 @@ export default function Jogadores() {
                     error={touched.nome && errors.nome}
                     style={styles.input}
                   />
-
                   {touched.nome && errors.nome && (
                     <Text style={styles.errorMessage}>{errors.nome}</Text>
                   )}
@@ -197,7 +212,7 @@ export default function Jogadores() {
                     onValueChange={(itemValue) => setSelectedEquipe(itemValue)}
                     style={styles.dropdownButton}
                   >
-                    <Picker.Item label="Selecione a equipe" value="Flamengos" />
+                    <Picker.Item label="Selecione a equipe" value="Flamengo" />
                     {equipeNomes.map((nomeEquipe, index) => (
                       <Picker.Item key={index} label={nomeEquipe} value={nomeEquipe} />
                     ))}
@@ -276,7 +291,6 @@ export default function Jogadores() {
                     )}
                   />
 
-
                   {touched.altura && errors.altura && (
                     <Text style={styles.errorMessage}>{errors.altura}</Text>
                   )}
@@ -310,11 +324,9 @@ export default function Jogadores() {
                       style={styles.button}
                     >
                       <Icon name="check" size={20} color="white" />
-                      {'  '}Cadastrar Jogador
+                      {'  '} {editPlayerData ? 'Atualizar Jogador' : 'Cadastrar Jogador'}
                     </Button>
-
                   </View>
-
                 </View>
               )}
             </Formik>
@@ -330,7 +342,6 @@ export default function Jogadores() {
       resizeMode="cover"
       style={{ flex: 1 }}
     >
-
       <View style={styles.container}>
         <FlatList
           data={data}
@@ -346,12 +357,14 @@ export default function Jogadores() {
                 <Text>Altura: {item.altura}</Text>
                 <Text>Nacionalidade: {item.nacionalidade}</Text>
                 <Card.Actions>
-                  <Button onPress={() => excluirItem(item)}>
-                    <Icon name="trash" size={20} color="red" />
-                  </Button>
+                <Button mode="outlined" onPress={() => editarItem(item)}>
+                  Editar
+                </Button>
+                <Button mode="outlined" onPress={() => excluirItem(item)}>
+                  Excluir
+                </Button>
                 </Card.Actions>
               </Card.Content>
-
             </Card>
           )}
         />
@@ -359,10 +372,20 @@ export default function Jogadores() {
         <FAB
           style={styles.fab}
           icon="plus"
-          onPress={() => setModalVisible(true)}
+          onPress={() => {
+            setEditPlayerData(null);
+            setModalVisible(true);
+          }}
         />
 
-        <ModalFormulario visivel={modalVisible} aoFechar={() => setModalVisible(false)} />
+        <ModalFormulario
+          visivel={modalVisible}
+          aoFechar={() => {
+            setModalVisible(false);
+            setEditPlayerData(null);
+          }}
+          editPlayerData={editPlayerData}
+        />
       </View>
     </ImageBackground>
   );
@@ -378,7 +401,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: 'white'
+    color: 'white',
   },
   input: {
     marginVertical: 8,
@@ -399,7 +422,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     marginTop: 8,
-    color: 'white'
+    color: 'white',
   },
   errorMessage: {
     color: 'red',
@@ -430,3 +453,4 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 });
+   
