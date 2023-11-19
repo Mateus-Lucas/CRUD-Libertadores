@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-  StyleSheet,
-  ImageBackground,
-  Alert,
-} from 'react-native';
+import { View, FlatList, TouchableOpacity, Modal, StyleSheet, ImageBackground, Alert} from 'react-native';
 import { Button, Text, TextInput, Card, FAB } from 'react-native-paper';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
@@ -16,7 +8,6 @@ import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Picker } from '@react-native-picker/picker';
 import { TextInputMask } from 'react-native-masked-text';
-import LinearGradient from 'react-native-linear-gradient';
 
 import fundo from '../../img/fundo.jpg';
 import { ScrollView } from 'react-native-gesture-handler';
