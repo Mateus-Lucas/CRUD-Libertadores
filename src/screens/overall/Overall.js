@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Modal, TouchableOpacity, FlatList, Alert, Image, ImageBackground } from 'react-native';
-import { Button, Text, TextInput, FAB, Card } from 'react-native-paper';
+import { Button, Text, TextInput, FAB, Card, Title, Paragraph, Divider } from 'react-native-paper';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -46,7 +46,7 @@ export default function Overall() {
       setJogadores(jogadoresData);
     });
   }, []);
-  
+
   useEffect(() => {
     if (selectedItem) {
       // Preencha os campos do formulário quando um item for selecionado
@@ -59,18 +59,18 @@ export default function Overall() {
       setPosicaoSelecionada(selectedItem.posicao);
     }
   }, [selectedItem]);
-  
+
 
   const carregarDadosDoArmazenamentoOverall = async () => {
     try {
       const dadosArmazenados = await AsyncStorage.getItem('formDataOverall');
       console.log('Valor bruto do AsyncStorage (Overall):', dadosArmazenados);
-  
+
       if (dadosArmazenados) {
         try {
           const dadosParseados = JSON.parse(dadosArmazenados);
           console.log('Dados parseados do AsyncStorage (Overall):', dadosParseados);
-  
+
           if (Array.isArray(dadosParseados)) {
             console.log('Dados parseados como array. Adicionando ao estado existente.');
             setData(dadosParseados);
@@ -199,7 +199,7 @@ export default function Overall() {
         } else {
           adicionarItem({ id: Date.now().toString(), ...valores });
         }
-    
+
         Toast.show({
           type: 'success',
           text1: 'Dados salvos com sucesso!',
@@ -214,7 +214,6 @@ export default function Overall() {
         });
       }
     };
-    
 
     return (
       <Modal visible={visivel} animationType="slide" onRequestClose={aoFechar}>
@@ -476,7 +475,6 @@ export default function Overall() {
     );
   };
 
-
   return (
     <ImageBackground
       source={fundo}
@@ -489,22 +487,50 @@ export default function Overall() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Card key={item.id} style={styles.card}>
+              <View style={styles.statsContainer}>
+                 <Paragraph style={styles.playerInfo}>{`Overall: ${item.posicao}`}</Paragraph>
+                 <Paragraph style={styles.playerInfo}>{`Posição: ${item.posicao}`}</Paragraph>
+              </View>
+              <Card.Cover
+                source={{ uri: 'https://img.freepik.com/vetores-premium/silhueta-negra-de-um-jogador-de-futebol-correndo-com-a-bola_566661-3599.jpg?w=2000' }}
+                style={{ height: 220, marginBottom: 3  }}
+              />
               <Card.Content>
-                <Text>{`Nome: ${item.nome}`}</Text>
-                <Text>{`Equipe: ${item.equipe}`}</Text>
-                <Text>{`Posição: ${item.posicao}`}</Text>
-                <Text>{`Velocidade: ${item.velocidade}`}</Text>
-                <Text>{`Finalização: ${item.finalizacao}`}</Text>
-                <Text>{`Passe: ${item.passe}`}</Text>
-                <Text>{`Drible: ${item.drible}`}</Text>
-                <Text>{`Defesa: ${item.defesa}`}</Text>
-                <Text>{`Físico: ${item.fisico}`}</Text>
+
+                <Paragraph style={styles.playerInfo}>{`Equipe: ${item.equipe}`}</Paragraph>
+
+                <Divider style={{ height: 5}} />
+
+                <Title>{`Nome: ${item.nome}`}</Title>
+
+                <Divider style={{ height: 5, marginBottom: 10 }} />
+
+                <View style={styles.statsContainer}>
+                  <Paragraph style={styles.stat}>{`VEL: ${item.velocidade}`}</Paragraph>
+                  <Paragraph style={styles.stat}>{`FIN: ${item.finalizacao}`}</Paragraph>
+                </View>
+
+                <Divider style={{ height: 2, marginBottom: 10 }} />
+
+                <View style={styles.statsContainer}>
+                  <Paragraph style={styles.stat}>{`PAS: ${item.passe}`}</Paragraph>
+                  <Paragraph style={styles.stat}>{`DRI: ${item.drible}`}</Paragraph>
+                </View>
+
+                <Divider style={{ height: 2, marginBottom: 10 }} />
+
+                <View style={styles.statsContainer}>
+                  <Paragraph style={styles.stat}>{`DEF: ${item.defesa}`}</Paragraph>
+                  <Paragraph style={styles.stat}>{`FIS: ${item.fisico}`}</Paragraph>
+                </View>
+
               </Card.Content>
               <Card.Actions style={styles.cardActions}>
                 <Button onPress={() => editarItem(item)}>Editar</Button>
                 <Button onPress={() => excluirItem(item)}>Excluir</Button>
               </Card.Actions>
             </Card>
+
           )}
         />
 
@@ -526,11 +552,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-  },
-  imagem: {
-    width: '100%',
-    height: 300,
-    resizeMode: 'cover',
+    alignItems: 'center'
   },
   title: {
     fontSize: 24,
@@ -573,10 +595,21 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   card: {
-    marginVertical: 8,
+    margin: 10,
+    padding: 15,
+    borderRadius: 10,
+    elevation: 4, // Adiciona uma sombra ao card
+    backgroundColor: '#ffffff',
+    width: 270
+  },
+  playerInfo: {
+    fontSize: 16,
+    marginBottom: 5,
   },
   cardActions: {
-    justifyContent: 'flex-end',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
   },
   fab: {
     position: 'absolute',
@@ -594,6 +627,13 @@ const styles = StyleSheet.create({
     color: 'black',
     paddingRight: 30,
     backgroundColor: 'white',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  stat: {
+    fontSize: 20
   }
 });
 

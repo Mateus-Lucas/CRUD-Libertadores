@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import fundo from '../../img/fundo.jpg'
+
 export default function Equipes() {
   const [modalVisible, setModalVisible] = useState(false);
   const [data, setData] = useState([]);
