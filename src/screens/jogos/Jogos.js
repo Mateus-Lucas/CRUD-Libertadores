@@ -1,49 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Modal, TouchableOpacity, FlatList, Alert, Image, ImageBackground } from 'react-native';
-import { Button, Text, TextInput, FAB, Card } from 'react-native-paper';
+import { Button, Text, TextInput, FAB, Card } from 'react-native-paper'; // Adicionando Picker
+import { Picker } from '@react-native-picker/picker';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import fundo from '../../img/fundo.jpg'
+import fundo from '../../img/fundo.jpg';
+import { TextInputMask } from 'react-native-masked-text';
+
 export default function Jogos() {
   const [modalVisible, setModalVisible] = useState(false);
   const [data, setData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [equipes, setEquipes] = useState([]); // Lista de equipes para o Picker
 
   const validationSchema = Yup.object().shape({
-    nome: Yup.string()
-      .required('O nome é obrigatório'),
-    titulos: Yup.string()
-      .required('A quantidade de títulos é obrigatória'),
-    jogadores: Yup.number()
-      .required('A quantidade de jogadores é obrigatória')
-      .max(30, 'Deve ter no máximo 30 jogadores')
-      .min(22, 'Deve ter no mínimo 22 jogadores'),
-    pais: Yup.string()
-      .required('O país é obrigatório'),
+    equipeA: Yup.string().required('A equipe A é obrigatória'),
+    equipeB: Yup.string().required('A equipe B é obrigatória'),
+    data: Yup.string().required('A data é obrigatória'),
+    horario: Yup.string().required('O horário é obrigatório'),
   });
 
   useEffect(() => {
     const carregarDadosDoArmazenamento = async () => {
       try {
         const dadosArmazenados = await AsyncStorage.getItem('formData');
-        console.log('Dados brutos do AsyncStorage:', dadosArmazenados);
 
         if (dadosArmazenados) {
           const dadosParseados = JSON.parse(dadosArmazenados);
-          console.log('Dados parseados do AsyncStorage:', dadosParseados);
 
           if (Array.isArray(dadosParseados)) {
-            console.log('Dados parseados como array. Adicionando ao estado existente.');
             setData(dadosParseados);
           } else if (typeof dadosParseados === 'object') {
-            console.log('Dados parseados como objeto único. Adicionando ao estado existente.');
             setData([dadosParseados]);
           } else {
             console.error('Dados armazenados não são um array ou objeto:', dadosParseados);
           }
+        }
+
+        const equipesArmazenadas = await AsyncStorage.getItem('equipes');
+        if (equipesArmazenadas) {
+          setEquipes(JSON.parse(equipesArmazenadas));
         }
       } catch (erro) {
         console.error('Erro ao carregar os dados do AsyncStorage:', erro);
@@ -57,7 +56,7 @@ export default function Jogos() {
     try {
       const novoItem = {
         ...item,
-        id: `item_${data.length + 1}_${Date.now()}`, // Usando um contador para garantir unicidade
+        id: `item_${data.length + 1}_${Date.now()}`,
       };
 
       const idExiste = data.some(itemExistente => itemExistente.id === novoItem.id);
@@ -71,7 +70,7 @@ export default function Jogos() {
         return;
       }
 
-      setData([...data, novoItem]); // Atualiza o estado local
+      setData([...data, novoItem]);
 
       await AsyncStorage.setItem('formData', JSON.stringify([...data, novoItem]));
 
@@ -96,7 +95,7 @@ export default function Jogos() {
   const excluirItem = async (item) => {
     Alert.alert(
       'Excluir Item',
-      `Deseja realmente excluir ${item.nome}?`,
+      `Deseja realmente excluir o jogo entre ${item.equipeA} e ${item.equipeB}?`,
       [
         {
           text: 'Cancelar',
@@ -107,8 +106,7 @@ export default function Jogos() {
           onPress: async () => {
             const dadosAtualizados = data.filter((i) => i.id !== item.id);
             setData(dadosAtualizados);
-            console.log('Dados após exclusão:', dadosAtualizados);
-            await AsyncStorage.setItem('equipes', JSON.stringify(dadosAtualizados));
+            await AsyncStorage.setItem('formData', JSON.stringify(dadosAtualizados));
             Toast.show({
               type: 'success',
               text1: 'Item excluído com sucesso!',
@@ -166,81 +164,106 @@ export default function Jogos() {
         >
 
           <View style={styles.container}>
-            <Text style={styles.title}>{selectedItem ? 'Editar Item' : 'Nova Equipe'}</Text>
+            <Text style={styles.title}>{selectedItem ? 'Editar Jogo' : 'Novo Jogo'}</Text>
             <Formik
-              initialValues={valoresFormulario || { nome: '', titulos: '', jogadores: '', pais: '' }}
+              initialValues={valoresFormulario || { equipeA: '', equipeB: '', data: '', horario: '' }}
               validationSchema={validationSchema}
               onSubmit={enviar}
             >
               {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <View>
-                  <TextInput
-                    label="Nome"
-                    onChangeText={handleChange('nome')}
-                    onBlur={handleBlur('nome')}
-                    value={values.nome}
-                    error={touched.nome && errors.nome}
-                    style={styles.input}
-                  />
+                  <Picker
+                    selectedValue={values.equipeA}
+                    onValueChange={(itemValue) => handleChange('equipeA')(itemValue)}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Selecione a Equipe A" value="" />
+                    {equipes.map((equipe) => (
+                      <Picker.Item key={equipe.id} label={equipe.nome} value={equipe.nome} />
+                    ))}
+                  </Picker>
+                  {touched.equipeA && errors.equipeA && (
+                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.equipeA}</Text>
+                  )}
 
-                  {touched.nome && errors.nome && (
-                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.nome}</Text>
+                  <Picker
+                    selectedValue={values.equipeB}
+                    onValueChange={(itemValue) => handleChange('equipeB')(itemValue)}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Selecione a Equipe B" value="" />
+                    {equipes.map((equipe) => (
+                      <Picker.Item key={equipe.id} label={equipe.nome} value={equipe.nome} />
+                    ))}
+                  </Picker>
+                  {touched.equipeB && errors.equipeB && (
+                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.equipeB}</Text>
                   )}
 
                   <TextInput
-                    label="Títulos"
-                    onChangeText={handleChange('titulos')}
-                    onBlur={handleBlur('titulos')}
-                    value={values.titulos.toString()}
-                    error={touched.titulos && errors.titulos}
-                    keyboardType="numeric"
+                    label="Data"
+                    onChangeText={handleChange('data')}
+                    onBlur={handleBlur('data')}
+                    value={values.data}
+                    error={touched.data && errors.data}
                     style={styles.input}
+                    render={(props) => (
+                      <TextInputMask
+                        {...props}
+                        type={'datetime'}
+                        options={{
+                          format: 'DD/MM/YYYY',
+                        }}
+                      />
+                    )}
                   />
-
-                  {touched.titulos && errors.titulos && (
-                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.titulos}</Text>
+                  {touched.data && errors.data && (
+                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.data}</Text>
                   )}
 
                   <TextInput
-                    label="Jogadores"
-                    onChangeText={handleChange('jogadores')}
-                    onBlur={handleBlur('jogadores')}
-                    value={values.jogadores.toString()}
-                    error={touched.jogadores && errors.jogadores}
-                    keyboardType="numeric"
+                    label="Horário"
+                    onChangeText={handleChange('horario')}
+                    onBlur={handleBlur('horario')}
+                    value={values.horario}
+                    error={touched.horario && errors.horario}
                     style={styles.input}
+                    render={(props) => (
+                      <TextInputMask
+                        {...props}
+                        type={'datetime'}
+                        options={{
+                          format: 'HH:mm',
+                        }}
+                      />
+                    )}
                   />
-
-                  {touched.jogadores && errors.jogadores && (
-                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.jogadores}</Text>
+                  {touched.horario && errors.horario && (
+                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.horario}</Text>
                   )}
 
-                  <TextInput
-                    label="País"
-                    onChangeText={handleChange('pais')}
-                    onBlur={handleBlur('pais')}
-                    value={values.pais.toString()}
-                    error={touched.age && errors.pais}
-                    style={styles.input}
-                  />
+                  <View style={styles.containerButton}>
+                    <Button
+                      mode='contained'
+                      onPress={aoFechar}
+                      style={[styles.button, styles.voltarButton]}
+                    >
+                      <Icon name="arrow-left" size={20} color="white" />
+                      {'  '}Voltar
+                    </Button>
 
-                  {touched.pais && errors.pais && (
-                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.pais}</Text>
-                  )}
-
-                  <Button mode="contained" onPress={handleSubmit} style={styles.button}>
-                    {selectedItem ? 'Salvar' : 'Cadastrar'}
-                  </Button>
+                    <Button
+                      mode="contained"
+                      onPress={handleSubmit}
+                      style={styles.button}
+                    >
+                      <Icon name="check" size={20} color="white" />
+                      {'  '} {selectedItem ? 'Atualizar Jogo' : 'Cadastrar Jogo'}
+                    </Button>
+                  </View>
                 </View>
               )}
             </Formik>
-
-            <TouchableOpacity
-              onPress={aoFechar}
-              style={{ marginTop: 5 }}
-            >
-              <Icon name="chevron-left" size={30} color="#000" />
-            </TouchableOpacity>
           </View>
         </ImageBackground>
       </Modal>
@@ -264,15 +287,14 @@ export default function Jogos() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Card key={item.id} style={styles.card}>
-              <Card.Title title={`${item.nome}  `}
+              <Card.Title title={`${item.equipeA} vs ${item.equipeB}  `}
                 left={(props) => (
                   <Icon name="soccer-ball-o" size={30} color="black" {...props} />
                 )}
               />
               <Card.Content>
-                <Text>Títulos: {item.titulos}</Text>
-                <Text>Jogadores: {item.jogadores}</Text>
-                <Text>País: {item.pais}</Text>
+                <Text>Data: {item.data}</Text>
+                <Text>Horário: {item.horario}</Text>
               </Card.Content>
               <Card.Actions style={styles.cardActions}>
                 <Button mode="outlined" onPress={() => editarItem(item)}>
@@ -314,15 +336,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
   },
+  containerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 10,
+    marginBottom: 30
+  },
+  button: {
+    marginTop: 16,
+    backgroundColor: 'blue',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  voltarButton: {
+    backgroundColor: 'red', // Cor vermelha para o botão "Voltar"
+  },
   input: {
     marginVertical: 8,
     fontSize: 16,
   },
-  button: {
-    marginTop: 16,
+  picker: {
+    marginVertical: 8,
+    fontSize: 16,
+    height: 50,
+    color: 'black',
   },
-  closeButton: {
-    color: 'blue',
+  button: {
     marginTop: 16,
   },
   card: {
