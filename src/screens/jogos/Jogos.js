@@ -172,19 +172,21 @@ export default function Jogos() {
             >
               {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <View>
-                  <Picker
-                    selectedValue={values.equipeA}
-                    onValueChange={(itemValue) => handleChange('equipeA')(itemValue)}
-                    style={styles.picker}
-                  >
-                    <Picker.Item label="Selecione a Equipe A" value="" />
-                    {equipes.map((equipe) => (
-                      <Picker.Item key={equipe.id} label={equipe.nome} value={equipe.nome} />
-                    ))}
-                  </Picker>
-                  {touched.equipeA && errors.equipeA && (
-                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.equipeA}</Text>
-                  )}
+               
+                    <Picker
+                      selectedValue={values.equipeA}
+                      onValueChange={(itemValue) => handleChange('equipeA')(itemValue)}
+                      style={styles.picker}
+                    >
+                      <Picker.Item label="Selecione a Equipe A" value="" />
+                      {equipes.map((equipe) => (
+                        <Picker.Item key={equipe.id} label={equipe.nome} value={equipe.nome} />
+                      ))}
+                    </Picker>
+                    {touched.equipeA && errors.equipeA && (
+                      <Text style={{ color: 'red', textAlign: 'center' }}>{errors.equipeA}</Text>
+                    )}
+               
 
                   <Picker
                     selectedValue={values.equipeB}
@@ -242,25 +244,14 @@ export default function Jogos() {
                     <Text style={{ color: 'red', textAlign: 'center' }}>{errors.horario}</Text>
                   )}
 
-                  <View style={styles.containerButton}>
-                    <Button
-                      mode='contained'
-                      onPress={aoFechar}
-                      style={[styles.button, styles.voltarButton]}
-                    >
-                      <Icon name="arrow-left" size={20} color="white" />
-                      {'  '}Voltar
-                    </Button>
-
-                    <Button
-                      mode="contained"
-                      onPress={handleSubmit}
-                      style={styles.button}
-                    >
-                      <Icon name="check" size={20} color="white" />
-                      {'  '} {selectedItem ? 'Atualizar Jogo' : 'Cadastrar Jogo'}
-                    </Button>
-                  </View>
+                <Card.Actions style={styles.cardActions}>
+                <Button mode="outlined" onPress={() => editarItem(item)}>
+                  Editar
+                </Button>
+                <Button mode="outlined" onPress={() => excluirItem(item)}>
+                  Excluir
+                </Button>
+              </Card.Actions>
                 </View>
               )}
             </Formik>
@@ -335,6 +326,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
+    color: 'white'
   },
   containerButton: {
     flexDirection: 'row',
@@ -349,7 +341,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   voltarButton: {
-    backgroundColor: 'red', // Cor vermelha para o botão "Voltar"
+    backgroundColor: 'red', 
   },
   input: {
     marginVertical: 8,
@@ -360,6 +352,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     height: 50,
     color: 'black',
+    borderWidth: 1, 
+    borderColor: 'gray', 
+    borderRadius: 4, 
+    paddingLeft: 8, 
+    backgroundColor: '#F8F8F8',
   },
   button: {
     marginTop: 16,

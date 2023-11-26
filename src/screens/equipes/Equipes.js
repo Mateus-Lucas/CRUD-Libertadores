@@ -78,7 +78,7 @@ export default function Equipes() {
 
       Toast.show({
         type: 'success',
-        text1: 'Item adicionado com sucesso!',
+        text1: 'Equipe adicionada com sucesso!',
       });
     } catch (erro) {
       console.error('Erro ao adicionar o item:', erro);
@@ -145,7 +145,7 @@ export default function Equipes() {
 
         Toast.show({
           type: 'success',
-          text1: 'Dados salvos com sucesso!',
+          text1: 'Equipe editada com sucesso!',
         });
         resetForm();
         aoFechar();
@@ -229,19 +229,28 @@ export default function Equipes() {
                     <Text style={{ color: 'red', textAlign: 'center' }}>{errors.pais}</Text>
                   )}
 
-                  <Button mode="contained" onPress={handleSubmit} style={styles.button}>
-                    {selectedItem ? 'Salvar' : 'Cadastrar'}
-                  </Button>
+                  <View style={styles.containerButton}>
+                    <Button
+                      mode='contained'
+                      onPress={aoFechar}
+                      style={[styles.button, styles.voltarButton]}
+                    >
+                      <Icon name="arrow-left" size={20} color="white" />
+                      {'  '}Voltar
+                    </Button>
+
+                    <Button
+                      mode="contained"
+                      onPress={handleSubmit}
+                      style={styles.button}
+                    >
+                      <Icon name="check" size={20} color="white" />
+                      {'  '} {selectedItem ? 'Atualizar Time' : 'Cadastrar Time'}
+                    </Button>
+                  </View>
                 </View>
               )}
             </Formik>
-
-            <TouchableOpacity
-              onPress={aoFechar}
-              style={{ marginTop: 5 }}
-            >
-              <Icon name="chevron-left" size={30} color="#000" />
-            </TouchableOpacity>
           </View>
         </ImageBackground>
       </Modal>
@@ -314,17 +323,26 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
+    color: 'white'
   },
   input: {
     marginVertical: 8,
     fontSize: 16,
   },
+  containerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 10,
+    marginBottom: 30
+  },
   button: {
     marginTop: 16,
+    backgroundColor: 'blue',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  closeButton: {
-    color: 'blue',
-    marginTop: 16,
+  voltarButton: {
+    backgroundColor: 'red', 
   },
   card: {
     marginVertical: 8,

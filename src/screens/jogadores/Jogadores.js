@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, FlatList, TouchableOpacity, Modal, StyleSheet, ImageBackground, Alert} from 'react-native';
+import { View, FlatList, TouchableOpacity, Modal, StyleSheet, ImageBackground, Alert } from 'react-native';
 import { Button, Text, TextInput, Card, FAB } from 'react-native-paper';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
@@ -13,11 +13,15 @@ import fundo from '../../img/fundo.jpg';
 import { ScrollView } from 'react-native-gesture-handler';
 
 export default function Jogadores() {
+
   const [modalVisible, setModalVisible] = useState(false);
   const [data, setData] = useState([]);
   const [selectedEquipe, setSelectedEquipe] = useState('');
   const [equipeNomes, setEquipeNomes] = useState([]);
   const [editPlayerData, setEditPlayerData] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredPlayers, setFilteredPlayers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const validationSchema = Yup.object().shape({
     nome: Yup.string().required('O nome é obrigatório'),
@@ -33,6 +37,10 @@ export default function Jogadores() {
     carregarDadosDoArmazenamentoJogadores();
   }, []);
 
+  useEffect(() => {
+    carregarDadosDoArmazenamentoEquipes();
+  }, [modalVisible]);
+
   const carregarDadosDoArmazenamentoEquipes = async () => {
     try {
       const dadosArmazenados = await AsyncStorage.getItem('formData');
@@ -43,7 +51,7 @@ export default function Jogadores() {
         console.log('Dados parseados:', dadosParseados);
 
         if (Array.isArray(dadosParseados)) {
-          const nomesEquipes = dadosParseados.map((item) => item.nome);
+          const nomesEquipes = dadosParseados.map((item) => item.nome.trim());
           console.log('Nomes de equipes:', nomesEquipes);
 
           const equipesUnicas = [...new Set(nomesEquipes)];
@@ -67,6 +75,7 @@ export default function Jogadores() {
 
         if (Array.isArray(dadosParseados)) {
           setData(dadosParseados);
+          setFilteredPlayers(dadosParseados);
         }
       }
     } catch (erro) {
@@ -74,17 +83,25 @@ export default function Jogadores() {
     }
   };
 
+
   const adicionarJogador = async (jogador) => {
     try {
       const novoJogador = {
         ...jogador,
         id: `jogador_${data.length + 1}_${Date.now()}`,
       };
-
+  
+      // Atualize o estado 'data' e 'filteredPlayers'
       setData((prevData) => [...prevData, novoJogador]);
-
+      setFilteredPlayers((prevPlayers) => [...prevPlayers, novoJogador]);
+  
+      // Atualize o AsyncStorage apenas com o estado 'data'
       await AsyncStorage.setItem('formDataJogadores', JSON.stringify([...data, novoJogador]));
-
+  
+      // Atualize o estado 'equipeNomes' com as equipes únicas da lista de jogadores
+      const nomesEquipesAtualizados = [...new Set([...equipeNomes, jogador.equipe])];
+      setEquipeNomes(nomesEquipesAtualizados);
+  
       Toast.show({
         type: 'success',
         text1: 'Jogador cadastrado com sucesso!',
@@ -97,6 +114,7 @@ export default function Jogadores() {
       });
     }
   };
+  
 
   const excluirItem = async (item) => {
     Alert.alert(
@@ -112,18 +130,24 @@ export default function Jogadores() {
           onPress: async () => {
             const dadosAtualizados = data.filter((i) => i.id !== item.id);
             setData(dadosAtualizados);
-            console.log('Dados após exclusão:', dadosAtualizados);
+            setFilteredPlayers(dadosAtualizados);
+  
+            // Atualize o estado 'equipeNomes' após a exclusão
+            const nomesEquipesAtualizados = dadosAtualizados.map((item) => item.equipe);
+            const equipesUnicasAtualizadas = [...new Set(nomesEquipesAtualizados)];
+            setEquipeNomes(equipesUnicasAtualizadas);
+  
             await AsyncStorage.setItem('formDataJogadores', JSON.stringify(dadosAtualizados));
             Toast.show({
               type: 'success',
-              text1: 'Item excluído com sucesso!',
+              text1: 'Jogador excluído com sucesso!',
             });
           },
         },
       ],
       { cancelable: true }
     );
-  };
+  };  
 
   const editarItem = (item) => {
     setEditPlayerData(item);
@@ -135,11 +159,12 @@ export default function Jogadores() {
       const updatedData = data.map((item) =>
         item.id === updatedPlayer.id ? updatedPlayer : item
       );
-
+  
       setData(updatedData);
-
+      setFilteredPlayers(updatedData); // Adicione esta linha para atualizar filteredPlayers
+  
       await AsyncStorage.setItem('formDataJogadores', JSON.stringify(updatedData));
-
+  
       Toast.show({
         type: 'success',
         text1: 'Jogador atualizado com sucesso!',
@@ -203,7 +228,7 @@ export default function Jogadores() {
                     onValueChange={(itemValue) => setSelectedEquipe(itemValue)}
                     style={styles.dropdownButton}
                   >
-                    <Picker.Item label="Selecione a equipe" value="Flamengo" />
+                    <Picker.Item label="Selecione a equipe" value="" />
                     {equipeNomes.map((nomeEquipe, index) => (
                       <Picker.Item key={index} label={nomeEquipe} value={nomeEquipe} />
                     ))}
@@ -334,8 +359,15 @@ export default function Jogadores() {
       style={{ flex: 1 }}
     >
       <View style={styles.container}>
+        <TextInput
+          style={styles.input}
+          placeholder="Pesquisar"
+          value={searchTerm}
+          onChangeText={(text) => setSearchTerm(text)}
+        />
+
         <FlatList
-          data={data}
+          data={filteredPlayers.filter(player => player.equipe.toLowerCase().includes(searchTerm.toLowerCase()))}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Card key={item.id} style={styles.card}>
@@ -348,12 +380,12 @@ export default function Jogadores() {
                 <Text>Altura: {item.altura}</Text>
                 <Text>Nacionalidade: {item.nacionalidade}</Text>
                 <Card.Actions>
-                <Button mode="outlined" onPress={() => editarItem(item)}>
-                  Editar
-                </Button>
-                <Button mode="outlined" onPress={() => excluirItem(item)}>
-                  Excluir
-                </Button>
+                  <Button mode="outlined" onPress={() => editarItem(item)}>
+                    Editar
+                  </Button>
+                  <Button mode="outlined" onPress={() => excluirItem(item)}>
+                    Excluir
+                  </Button>
                 </Card.Actions>
               </Card.Content>
             </Card>
@@ -434,9 +466,17 @@ const styles = StyleSheet.create({
   voltarButton: {
     backgroundColor: 'red', // Cor vermelha para o botão "Voltar"
   },
+  // Adicione ao estilo do seu card
   card: {
     marginVertical: 8,
+    borderRadius: 10, // Adicione bordas arredondadas
+    shadowColor: 'black', // Adicione uma sombra
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 5, // Adicione uma elevação para dispositivos Android
   },
+
   fab: {
     position: 'absolute',
     margin: 16,
@@ -444,4 +484,4 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 });
-   
+
