@@ -242,6 +242,7 @@ export default function Overall() {
             >
               {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <View>
+                  
                   <Picker
                     selectedValue={jogadorSelecionado ? jogadorSelecionado.nome : ''}
                     onValueChange={(nome) => {
@@ -264,7 +265,6 @@ export default function Overall() {
                       <Picker.Item key={jogador.id} label={jogador.nome} value={jogador.nome} />
                     ))}
                   </Picker>
-
 
                   <TextInput
                     label="Equipe"

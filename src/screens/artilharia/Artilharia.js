@@ -1,97 +1,137 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Modal, TouchableOpacity, FlatList, Alert, Image, ImageBackground } from 'react-native';
-import { Button, Text, TextInput, FAB, Card } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { View, FlatList, Modal, StyleSheet, ImageBackground, Alert } from 'react-native';
+import { Button, Text, TextInput, Card, FAB } from 'react-native-paper';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import fundo from '../../img/fundo.jpg'
+import { Picker } from '@react-native-picker/picker';
+import { TextInputMask } from 'react-native-masked-text';
+
+import fundo from '../../img/fundo.jpg';
+import { ScrollView } from 'react-native-gesture-handler';
+
 export default function Artilharia() {
+
   const [modalVisible, setModalVisible] = useState(false);
   const [data, setData] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedEquipe, setSelectedEquipe] = useState('');
+  const [equipeNomes, setEquipeNomes] = useState([]);
+  const [editPlayerData, setEditPlayerData] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredPlayers, setFilteredPlayers] = useState([]);
+  const [sortField, setSortField] = useState(null);
+  const [jogadorSelecionado, setJogadorSelecionado] = useState(null);
+  const [jogadores, setJogadores] = useState([]);
 
   const validationSchema = Yup.object().shape({
-    nome: Yup.string()
-      .required('O nome é obrigatório'),
-    titulos: Yup.string()
-      .required('A quantidade de títulos é obrigatória'),
-    jogadores: Yup.number()
-      .required('A quantidade de jogadores é obrigatória')
-      .max(30, 'Deve ter no máximo 30 jogadores')
-      .min(22, 'Deve ter no mínimo 22 jogadores'),
-    pais: Yup.string()
-      .required('O país é obrigatório'),
+    nome: Yup.string().required('O nome é obrigatório'),
+    equipe: Yup.string().required('A equipe é obrigatória'),
+    gols: Yup.number().required('A quantidade de gols é obrigatória').min(0, 'Deve ser maior ou igual a 0'),
+    assistencias: Yup.number().required('A quantidade de assistências é obrigatória').min(0, 'Deve ser maior ou igual a 0'),
   });
 
   useEffect(() => {
-    const carregarDadosDoArmazenamento = async () => {
-      try {
-        const dadosArmazenados = await AsyncStorage.getItem('formData');
-        console.log('Dados brutos do AsyncStorage:', dadosArmazenados);
-
-        if (dadosArmazenados) {
-          const dadosParseados = JSON.parse(dadosArmazenados);
-          console.log('Dados parseados do AsyncStorage:', dadosParseados);
-
-          if (Array.isArray(dadosParseados)) {
-            console.log('Dados parseados como array. Adicionando ao estado existente.');
-            setData(dadosParseados);
-          } else if (typeof dadosParseados === 'object') {
-            console.log('Dados parseados como objeto único. Adicionando ao estado existente.');
-            setData([dadosParseados]);
-          } else {
-            console.error('Dados armazenados não são um array ou objeto:', dadosParseados);
-          }
-        }
-      } catch (erro) {
-        console.error('Erro ao carregar os dados do AsyncStorage:', erro);
-      }
-    };
-
-    carregarDadosDoArmazenamento();
+    carregarDadosDoArmazenamentoEquipes();
+    carregarDadosDoArmazenamentoJogadores();
+    carregarDadosFormJogadores();
   }, []);
 
-  const adicionarItem = async (item) => {
+  const carregarDadosFormJogadores = async () => {
     try {
-      const novoItem = {
-        ...item,
-        id: `item_${data.length + 1}_${Date.now()}`, // Usando um contador para garantir unicidade
+      const dadosArmazenados = await AsyncStorage.getItem('formJogadores');
+      console.log('Conteúdo do AsyncStorage (formJogadores):', dadosArmazenados);
+
+      if (dadosArmazenados) {
+        const dadosParseados = JSON.parse(dadosArmazenados);
+
+        if (Array.isArray(dadosParseados)) {
+          setFormJogadores(dadosParseados);
+        }
+      }
+    } catch (erro) {
+      console.error('Erro ao carregar os dados do AsyncStorage (formJogadores):', erro);
+    }
+  };
+
+  useEffect(() => {
+    carregarDadosDoArmazenamentoEquipes();
+  }, [modalVisible]);
+
+  const carregarDadosDoArmazenamentoEquipes = async () => {
+    try {
+      const dadosArmazenados = await AsyncStorage.getItem('formData');
+      console.log('Conteúdo do AsyncStorage (formData):', dadosArmazenados);
+
+      if (dadosArmazenados) {
+        const dadosParseados = JSON.parse(dadosArmazenados);
+        console.log('Dados parseados:', dadosParseados);
+
+        if (Array.isArray(dadosParseados)) {
+          const nomesEquipes = dadosParseados.map((item) => item.nome.trim());
+          console.log('Nomes de equipes:', nomesEquipes);
+
+          const equipesUnicas = [...new Set(nomesEquipes)];
+          console.log('Equipes únicas:', equipesUnicas);
+
+          setEquipeNomes(equipesUnicas);
+        }
+      }
+    } catch (erro) {
+      console.error('Erro ao carregar os dados do AsyncStorage:', erro);
+    }
+  };
+
+  const carregarDadosDoArmazenamentoJogadores = async () => {
+    try {
+      const dadosArmazenados = await AsyncStorage.getItem('formDataJogadores');
+      console.log('Conteúdo do AsyncStorage (formDataJogadores):', dadosArmazenados);
+
+      if (dadosArmazenados) {
+        const dadosParseados = JSON.parse(dadosArmazenados);
+
+        if (Array.isArray(dadosParseados)) {
+          setData(dadosParseados);
+          setFilteredPlayers(dadosParseados);
+        }
+      }
+    } catch (erro) {
+      console.error('Erro ao carregar os dados do AsyncStorage:', erro);
+    }
+  };
+
+  const adicionarJogador = async (jogador) => {
+    try {
+      const novoJogador = {
+        ...jogador,
+        id: `jogador_${data.length + 1}_${Date.now()}`,
       };
 
-      const idExiste = data.some(itemExistente => itemExistente.id === novoItem.id);
+      // Atualize o estado 'data' e 'filteredPlayers'
+      setData((prevData) => [...prevData, novoJogador]);
+      setFilteredPlayers((prevPlayers) => [...prevPlayers, novoJogador]);
 
-      if (idExiste) {
-        console.error('ID duplicado detectado:', novoItem.id);
-        Toast.show({
-          type: 'error',
-          text1: 'Erro ao adicionar o item. ID duplicado detectado.',
-        });
-        return;
-      }
+      // Atualize o AsyncStorage apenas com o estado 'data'
+      await AsyncStorage.setItem('formDataJogadores', JSON.stringify([...data, novoJogador]));
 
-      setData([...data, novoItem]); // Atualiza o estado local
-
-      await AsyncStorage.setItem('formData', JSON.stringify([...data, novoItem]));
+      // Atualize o estado 'equipeNomes' com as equipes únicas da lista de jogadores
+      const nomesEquipesAtualizados = [...new Set([...equipeNomes, jogador.equipe])];
+      setEquipeNomes(nomesEquipesAtualizados);
 
       Toast.show({
         type: 'success',
-        text1: 'Item adicionado com sucesso!',
+        text1: 'Jogador cadastrado com sucesso!',
       });
     } catch (erro) {
-      console.error('Erro ao adicionar o item:', erro);
+      console.error('Erro ao cadastrar o jogador:', erro);
       Toast.show({
         type: 'error',
-        text1: 'Erro ao adicionar o item. Tente novamente.',
+        text1: 'Erro ao cadastrar o jogador. Tente novamente.',
       });
     }
   };
 
-  const editarItem = (item) => {
-    setModalVisible(true);
-    setSelectedItem(item);
-  };
 
   const excluirItem = async (item) => {
     Alert.alert(
@@ -107,11 +147,17 @@ export default function Artilharia() {
           onPress: async () => {
             const dadosAtualizados = data.filter((i) => i.id !== item.id);
             setData(dadosAtualizados);
-            console.log('Dados após exclusão:', dadosAtualizados);
-            await AsyncStorage.setItem('formData', JSON.stringify(dadosAtualizados));
+            setFilteredPlayers(dadosAtualizados);
+
+            // Atualize o estado 'equipeNomes' após a exclusão
+            const nomesEquipesAtualizados = dadosAtualizados.map((item) => item.equipe);
+            const equipesUnicasAtualizadas = [...new Set(nomesEquipesAtualizados)];
+            setEquipeNomes(equipesUnicasAtualizadas);
+
+            await AsyncStorage.setItem('formDataJogadores', JSON.stringify(dadosAtualizados));
             Toast.show({
               type: 'success',
-              text1: 'Item excluído com sucesso!',
+              text1: 'Jogador excluído com sucesso!',
             });
           },
         },
@@ -120,43 +166,36 @@ export default function Artilharia() {
     );
   };
 
-  const ModalFormulario = ({ visivel, aoFechar }) => {
-    const [valoresFormulario, setValoresFormulario] = useState(selectedItem);
+  const editarItem = (item) => {
+    setEditPlayerData(item);
+    setModalVisible(true);
+  };
 
-    useEffect(() => {
-      if (!visivel) {
-        setValoresFormulario(null);
-        setSelectedItem(null);
-      }
-    }, [visivel]);
+  const handleUpdatePlayer = async (updatedPlayer) => {
+    try {
+      const updatedData = data.map((item) =>
+        item.id === updatedPlayer.id ? updatedPlayer : item
+      );
 
-    const enviar = async (valores, { resetForm }) => {
-      try {
-        if (selectedItem) {
-          const dadosAtualizados = data.map((item) =>
-            item.id === selectedItem.id ? { ...item, ...valores } : item
-          );
-          setData(dadosAtualizados);
-          await AsyncStorage.setItem('formData', JSON.stringify(dadosAtualizados));
-        } else {
-          adicionarItem({ id: Date.now().toString(), ...valores });
-        }
+      setData(updatedData);
+      setFilteredPlayers(updatedData); // Adicione esta linha para atualizar filteredPlayers
 
-        Toast.show({
-          type: 'success',
-          text1: 'Dados salvos com sucesso!',
-        });
-        resetForm();
-        aoFechar();
-      } catch (erro) {
-        console.error('Erro ao salvar os dados:', erro);
-        Toast.show({
-          type: 'error',
-          text1: 'Erro ao salvar os dados. Tente novamente.',
-        });
-      }
-    };
+      await AsyncStorage.setItem('formDataJogadores', JSON.stringify(updatedData));
 
+      Toast.show({
+        type: 'success',
+        text1: 'Jogador atualizado com sucesso!',
+      });
+    } catch (erro) {
+      console.error('Erro ao atualizar o jogador:', erro);
+      Toast.show({
+        type: 'error',
+        text1: 'Erro ao atualizar o jogador. Tente novamente.',
+      });
+    }
+  };
+
+  const ModalFormulario = ({ visivel, aoFechar, editPlayerData }) => {
     return (
       <Modal visible={visivel} animationType="slide" onRequestClose={aoFechar}>
         <ImageBackground
@@ -164,84 +203,104 @@ export default function Artilharia() {
           resizeMode="cover"
           style={{ flex: 1 }}
         >
-
-          <View style={styles.container}>
-            <Text style={styles.title}>{selectedItem ? 'Editar Item' : 'Nova Equipe'}</Text>
+          <ScrollView style={styles.container}>
+            <Text style={styles.title}>{editPlayerData ? 'Editar Artilheiro' : 'Novo Artilheiro'}</Text>
             <Formik
-              initialValues={valoresFormulario || { nome: '', titulos: '', jogadores: '', pais: '' }}
+              initialValues={editPlayerData || {
+                nome: '',
+                equipe: '',
+                gols: '',
+                assistencias: ''
+              }}
               validationSchema={validationSchema}
-              onSubmit={enviar}
+              onSubmit={(valores) => {
+                if (editPlayerData) {
+                  handleUpdatePlayer({ ...valores, equipe: selectedEquipe });
+                } else {
+                  adicionarJogador({ ...valores, equipe: selectedEquipe });
+                }
+                aoFechar();
+              }}
             >
               {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <View>
+                  <Text style={styles.label}>Jogador</Text>
+                  <Picker
+                    selectedValue={jogadorSelecionado ? jogadorSelecionado.nome : ''}
+                    onValueChange={(nome) => {
+                      const jogador = jogadores.find(j => j.nome === nome);
+                      console.log('Valor selecionado no Picker:', nome);
+                      console.log('Jogador correspondente:', jogador);
+                      setJogadorSelecionado(jogador);
+                      handleChange('nome')(nome);
+                    }}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Selecione um jogador" value="" />
+                    {jogadores.map(jogador => (
+                      <Picker.Item key={jogador.id} label={jogador.nome} value={jogador.nome} />
+                    ))}
+                  </Picker>
+
+                  <Text style={styles.label}>Equipe</Text>
+                  <Picker
+                    selectedValue={selectedEquipe}
+                    onValueChange={(itemValue) => setSelectedEquipe(itemValue)}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Selecione a equipe" value="" />
+                    {equipeNomes.map((nomeEquipe, index) => (
+                      <Picker.Item key={index} label={nomeEquipe} value={nomeEquipe} />
+                    ))}
+                  </Picker>
+
                   <TextInput
-                    label="Nome"
-                    onChangeText={handleChange('nome')}
-                    onBlur={handleBlur('nome')}
-                    value={values.nome}
-                    error={touched.nome && errors.nome}
+                    label="Gols"
+                    onChangeText={handleChange('gols')}
+                    onBlur={handleBlur('gols')}
+                    value={values.gols}
+                    error={touched.gols && errors.gols}
                     style={styles.input}
                   />
-
-                  {touched.nome && errors.nome && (
-                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.nome}</Text>
+                  {touched.gols && errors.gols && (
+                    <Text style={styles.errorMessage}>{errors.gols}</Text>
                   )}
 
                   <TextInput
-                    label="Títulos"
-                    onChangeText={handleChange('titulos')}
-                    onBlur={handleBlur('titulos')}
-                    value={values.titulos.toString()}
-                    error={touched.titulos && errors.titulos}
-                    keyboardType="numeric"
+                    label="Assistências"
+                    onChangeText={handleChange('assistencias')}
+                    onBlur={handleBlur('assistencias')}
+                    value={values.assistencias}
+                    error={touched.assistencias && errors.assistencias}
                     style={styles.input}
                   />
-
-                  {touched.titulos && errors.titulos && (
-                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.titulos}</Text>
+                  {touched.assistencias && errors.assistencias && (
+                    <Text style={styles.errorMessage}>{errors.assistencias}</Text>
                   )}
 
-                  <TextInput
-                    label="Jogadores"
-                    onChangeText={handleChange('jogadores')}
-                    onBlur={handleBlur('jogadores')}
-                    value={values.jogadores.toString()}
-                    error={touched.jogadores && errors.jogadores}
-                    keyboardType="numeric"
-                    style={styles.input}
-                  />
+                  <View style={styles.containerButton}>
+                    <Button
+                      mode='contained'
+                      onPress={aoFechar}
+                      style={[styles.button, styles.voltarButton]}
+                    >
+                      <Icon name="arrow-left" size={20} color="white" />
+                      {'  '}Voltar
+                    </Button>
 
-                  {touched.jogadores && errors.jogadores && (
-                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.jogadores}</Text>
-                  )}
-
-                  <TextInput
-                    label="País"
-                    onChangeText={handleChange('pais')}
-                    onBlur={handleBlur('pais')}
-                    value={values.pais.toString()}
-                    error={touched.age && errors.pais}
-                    style={styles.input}
-                  />
-
-                  {touched.pais && errors.pais && (
-                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.pais}</Text>
-                  )}
-
-                  <Button mode="contained" onPress={handleSubmit} style={styles.button}>
-                    {selectedItem ? 'Salvar' : 'Cadastrar'}
-                  </Button>
+                    <Button
+                      mode="contained"
+                      onPress={handleSubmit}
+                      style={styles.button}
+                    >
+                      <Icon name="check" size={20} color="white" />
+                      {'  '} {editPlayerData ? 'Atualizar Jogador' : 'Cadastrar Jogador'}
+                    </Button>
+                  </View>
                 </View>
               )}
             </Formik>
-
-            <TouchableOpacity
-              onPress={aoFechar}
-              style={{ marginTop: 5 }}
-            >
-              <Icon name="chevron-left" size={30} color="#000" />
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </ImageBackground>
       </Modal>
     );
@@ -253,47 +312,72 @@ export default function Artilharia() {
       resizeMode="cover"
       style={{ flex: 1 }}
     >
-
       <View style={styles.container}>
-        <Image
-          style={styles.imagem}
-          source={require('../../img/equipes.jpg')}
+        <TextInput
+          style={styles.input}
+          placeholder="Pesquisar"
+          value={searchTerm}
+          onChangeText={(text) => setSearchTerm(text)}
         />
+
+        <View style={styles.sortButtons}>
+          <Button
+            mode="contained"
+            onPress={() => setSortField('gols')}
+            style={styles.sortButton}
+          >
+            Sort by Goals
+          </Button>
+          <Button
+            mode="contained"
+            onPress={() => setSortField('assistencias')}
+            style={styles.sortButton}
+          >
+            Sort by Assists
+          </Button>
+        </View>
+
         <FlatList
-          data={data}
+          data={sortField ? filteredPlayers.sort((a, b) => b[sortField] - a[sortField]) : filteredPlayers}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Card key={item.id} style={styles.card}>
-              <Card.Title title={`${item.nome}  `}
-                left={(props) => (
-                  <Icon name="soccer-ball-o" size={30} color="black" {...props} />
-                )}
-              />
+              <Card.Title title={`${item.nome}  `} />
               <Card.Content>
-                <Text>Títulos: {item.titulos}</Text>
-                <Text>Jogadores: {item.jogadores}</Text>
-                <Text>País: {item.pais}</Text>
+                <Text>Nome: {item.nome}</Text>
+                <Text>Equipe: {item.equipe}</Text>
+                <Text>Gols: {item.gols}</Text>
+                <Text>Assistências: {item.assistencias}</Text>
+                <Card.Actions>
+                  <Button mode="outlined" onPress={() => editarItem(item)}>
+                    Editar
+                  </Button>
+                  <Button mode="outlined" onPress={() => excluirItem(item)}>
+                    Excluir
+                  </Button>
+                </Card.Actions>
               </Card.Content>
-              <Card.Actions style={styles.cardActions}>
-                <Button mode="outlined" onPress={() => editarItem(item)}>
-                  Editar
-                </Button>
-                <Button mode="outlined" onPress={() => excluirItem(item)}>
-                  Excluir
-                </Button>
-              </Card.Actions>
             </Card>
           )}
         />
+
         <FAB
           style={styles.fab}
           icon="plus"
           onPress={() => {
+            setEditPlayerData(null);
             setModalVisible(true);
-            setSelectedItem(null);
           }}
         />
-        <ModalFormulario visivel={modalVisible} aoFechar={() => setModalVisible(false)} />
+
+        <ModalFormulario
+          visivel={modalVisible}
+          aoFechar={() => {
+            setModalVisible(false);
+            setEditPlayerData(null);
+          }}
+          editPlayerData={editPlayerData}
+        />
       </View>
     </ImageBackground>
   );
@@ -303,33 +387,65 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-  },
-  imagem: {
-    width: '100%',
-    height: 300,
-    resizeMode: 'cover',
+    backgroundColor: 'linear-gradient(180deg, #FFD700 0%, #000 100%)',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
+    color: 'white',
   },
   input: {
     marginVertical: 8,
     fontSize: 16,
+    backgroundColor: '#f4f4f4',
+    borderWidth: 1,
+    borderColor: '#000',
+    padding: 3,
+  },
+  picker: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: 'purple',
+    borderRadius: 8,
+    color: 'black',
+    paddingRight: 30,
+    backgroundColor: 'white',
+  },
+  label: {
+    fontSize: 16,
+    marginTop: 8,
+    color: 'white',
+  },
+  errorMessage: {
+    color: 'red',
+    marginTop: 5,
+  },
+  containerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 10,
+    marginBottom: 30
   },
   button: {
     marginTop: 16,
+    backgroundColor: 'blue',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  closeButton: {
-    color: 'blue',
-    marginTop: 16,
+  voltarButton: {
+    backgroundColor: 'red', // Cor vermelha para o botão "Voltar"
   },
   card: {
     marginVertical: 8,
-  },
-  cardActions: {
-    justifyContent: 'flex-end',
+    borderRadius: 10, // Adicione bordas arredondadas
+    shadowColor: 'black', // Adicione uma sombra
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 5, // Adicione uma elevação para dispositivos Android
   },
   fab: {
     position: 'absolute',
@@ -338,3 +454,4 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 });
+

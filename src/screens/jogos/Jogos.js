@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Modal, TouchableOpacity, FlatList, Alert, Image, ImageBackground } from 'react-native';
-import { Button, Text, TextInput, FAB, Card } from 'react-native-paper'; // Adicionando Picker
+import { Button, Text, TextInput, FAB, Card } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
@@ -14,7 +14,10 @@ export default function Jogos() {
   const [modalVisible, setModalVisible] = useState(false);
   const [data, setData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [equipes, setEquipes] = useState([]); // Lista de equipes para o Picker
+  const [selectedEquipeA, setSelectedEquipeA] = useState('');
+  const [selectedEquipeB, setSelectedEquipeB] = useState('');
+  const [equipes, setEquipes] = useState([]);
+  const [equipeNomes, setEquipeNomes] = useState([]);
 
   const validationSchema = Yup.object().shape({
     equipeA: Yup.string().required('A equipe A é obrigatória'),
@@ -24,7 +27,7 @@ export default function Jogos() {
   });
 
   useEffect(() => {
-    const carregarDadosDoArmazenamento = async () => {
+    const carregarDadosDoArmazenamentEquipes = async () => {
       try {
         const dadosArmazenados = await AsyncStorage.getItem('formData');
 
@@ -42,14 +45,19 @@ export default function Jogos() {
 
         const equipesArmazenadas = await AsyncStorage.getItem('equipes');
         if (equipesArmazenadas) {
-          setEquipes(JSON.parse(equipesArmazenadas));
+          const equipesParseadas = JSON.parse(equipesArmazenadas);
+          setEquipes(equipesParseadas);
+
+          // Extraia os nomes das equipes para popular equipeNomes
+          const nomesDasEquipes = equipesParseadas.map(equipe => equipe.nome);
+          setEquipeNomes(nomesDasEquipes);
         }
       } catch (erro) {
         console.error('Erro ao carregar os dados do AsyncStorage:', erro);
       }
     };
 
-    carregarDadosDoArmazenamento();
+    carregarDadosDoArmazenamentEquipes();
   }, []);
 
   const adicionarItem = async (item) => {
@@ -90,6 +98,8 @@ export default function Jogos() {
   const editarItem = (item) => {
     setModalVisible(true);
     setSelectedItem(item);
+    setSelectedEquipeA(item.equipeA);
+    setSelectedEquipeB(item.equipeB);
   };
 
   const excluirItem = async (item) => {
@@ -125,6 +135,8 @@ export default function Jogos() {
       if (!visivel) {
         setValoresFormulario(null);
         setSelectedItem(null);
+        setSelectedEquipeA('');
+        setSelectedEquipeB('');
       }
     }, [visivel]);
 
@@ -162,40 +174,42 @@ export default function Jogos() {
           resizeMode="cover"
           style={{ flex: 1 }}
         >
-
           <View style={styles.container}>
             <Text style={styles.title}>{selectedItem ? 'Editar Jogo' : 'Novo Jogo'}</Text>
             <Formik
-              initialValues={valoresFormulario || { equipeA: '', equipeB: '', data: '', horario: '' }}
+              initialValues={{
+                equipeA: selectedEquipeA,
+                equipeB: selectedEquipeB,
+                data: '',
+                horario: '',
+              }}
               validationSchema={validationSchema}
               onSubmit={enviar}
             >
               {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <View>
-               
-                    <Picker
-                      selectedValue={values.equipeA}
-                      onValueChange={(itemValue) => handleChange('equipeA')(itemValue)}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Selecione a Equipe A" value="" />
-                      {equipes.map((equipe) => (
-                        <Picker.Item key={equipe.id} label={equipe.nome} value={equipe.nome} />
-                      ))}
-                    </Picker>
-                    {touched.equipeA && errors.equipeA && (
-                      <Text style={{ color: 'red', textAlign: 'center' }}>{errors.equipeA}</Text>
-                    )}
-               
+                  <Picker
+                    selectedValue={values.equipeA}
+                    onValueChange={(itemValue) => handleChange('equipeA')(itemValue)}
+                    style={styles.dropdownButton}
+                  >
+                    <Picker.Item label="Selecione a equipe" value="" />
+                    {equipeNomes.map((nomeEquipe, index) => (
+                      <Picker.Item key={index} label={nomeEquipe} value={nomeEquipe} />
+                    ))}
+                  </Picker>
+                  {touched.equipeA && errors.equipeA && (
+                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.equipeA}</Text>
+                  )}
 
                   <Picker
                     selectedValue={values.equipeB}
                     onValueChange={(itemValue) => handleChange('equipeB')(itemValue)}
-                    style={styles.picker}
+                    style={styles.dropdownButton}
                   >
-                    <Picker.Item label="Selecione a Equipe B" value="" />
-                    {equipes.map((equipe) => (
-                      <Picker.Item key={equipe.id} label={equipe.nome} value={equipe.nome} />
+                    <Picker.Item label="Selecione a equipe" value="" />
+                    {equipeNomes.map((nomeEquipe, index) => (
+                      <Picker.Item key={index} label={nomeEquipe} value={nomeEquipe} />
                     ))}
                   </Picker>
                   {touched.equipeB && errors.equipeB && (
@@ -244,14 +258,11 @@ export default function Jogos() {
                     <Text style={{ color: 'red', textAlign: 'center' }}>{errors.horario}</Text>
                   )}
 
-                <Card.Actions style={styles.cardActions}>
-                <Button mode="outlined" onPress={() => editarItem(item)}>
-                  Editar
-                </Button>
-                <Button mode="outlined" onPress={() => excluirItem(item)}>
-                  Excluir
-                </Button>
-              </Card.Actions>
+                  <Card.Actions style={styles.cardActions}>
+                    <Button mode="outlined" onPress={handleSubmit}>
+                      {selectedItem ? 'Salvar Alterações' : 'Adicionar Jogo'}
+                    </Button>
+                  </Card.Actions>
                 </View>
               )}
             </Formik>
@@ -267,7 +278,6 @@ export default function Jogos() {
       resizeMode="cover"
       style={{ flex: 1 }}
     >
-
       <View style={styles.container}>
         <Image
           style={styles.imagem}
@@ -341,7 +351,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   voltarButton: {
-    backgroundColor: 'red', 
+    backgroundColor: 'red',
   },
   input: {
     marginVertical: 8,
@@ -352,10 +362,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     height: 50,
     color: 'black',
-    borderWidth: 1, 
-    borderColor: 'gray', 
-    borderRadius: 4, 
-    paddingLeft: 8, 
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 4,
+    paddingLeft: 8,
     backgroundColor: '#F8F8F8',
   },
   button: {
