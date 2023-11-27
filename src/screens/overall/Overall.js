@@ -114,7 +114,7 @@ export default function Overall() {
     try {
       const novoItem = {
         ...item,
-        id: `item_${data.length + 1}_${Date.now()}`, // Usando um contador para garantir unicidade
+        id: `item_${data.length + 1}_${Date.now()}`,
       };
 
       const idExiste = data.some(itemExistente => itemExistente.id === novoItem.id);
@@ -128,13 +128,12 @@ export default function Overall() {
         return;
       }
 
-      setData([...data, novoItem]); // Atualiza o estado local
-
       await AsyncStorage.setItem('formDataOverall', JSON.stringify([...data, novoItem]));
+      setData([...data, novoItem]); // Atualiza o estado local após o AsyncStorage ser atualizado
 
       Toast.show({
         type: 'success',
-        text1: 'Item adicionado com sucesso!',
+        text1: 'Overall adicionado com sucesso!',
       });
     } catch (erro) {
       console.error('Erro ao adicionar o item:', erro);
@@ -145,10 +144,19 @@ export default function Overall() {
     }
   };
 
+
   const editarItem = (item) => {
     setModalVisible(true);
     setSelectedItem(item);
+    setJogadorSelecionado({
+      nome: item.nome,
+      equipe: item.equipe,
+      posicao: item.posicao,
+    });
+    setEquipeSelecionada(item.equipe);
+    setPosicaoSelecionada(item.posicao);
   };
+
 
   const excluirItem = async (item) => {
     Alert.alert(
@@ -168,7 +176,7 @@ export default function Overall() {
             await AsyncStorage.setItem('formDataOverall', JSON.stringify(dadosAtualizados));
             Toast.show({
               type: 'success',
-              text1: 'Item excluído com sucesso!',
+              text1: 'Overall excluído com sucesso!',
             });
           },
         },
@@ -190,19 +198,26 @@ export default function Overall() {
     const enviar = async (valores, { resetForm }) => {
       try {
         console.log('Valores antes de enviar:', valores);
+        const novoItem = {
+          ...valores,
+          nome: jogadorSelecionado.nome,
+          equipe: equipeSelecionada,
+          posicao: posicaoSelecionada,
+        };
+
         if (selectedItem) {
           const dadosAtualizados = data.map((item) =>
-            item.id === selectedItem.id ? { ...item, ...valores } : item
+            item.id === selectedItem.id ? { ...item, ...novoItem } : item
           );
           setData(dadosAtualizados);
           await AsyncStorage.setItem('formDataOverall', JSON.stringify(dadosAtualizados));
         } else {
-          adicionarItem({ id: Date.now().toString(), ...valores });
+          adicionarItem({ id: Date.now().toString(), ...novoItem });
         }
 
         Toast.show({
           type: 'success',
-          text1: 'Dados salvos com sucesso!',
+          text1: 'Overall salvo com sucesso!',
         });
         resetForm(); // Reseta os valores do formulário
         aoFechar();
@@ -214,6 +229,7 @@ export default function Overall() {
         });
       }
     };
+
 
     return (
       <Modal visible={visivel} animationType="slide" onRequestClose={aoFechar}>
@@ -242,7 +258,7 @@ export default function Overall() {
             >
               {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <View>
-                  
+
                   <Picker
                     selectedValue={jogadorSelecionado ? jogadorSelecionado.nome : ''}
                     onValueChange={(nome) => {
@@ -488,20 +504,20 @@ export default function Overall() {
           renderItem={({ item }) => (
             <Card key={item.id} style={styles.card}>
               <View style={styles.statsContainer}>
-                 <Paragraph style={styles.playerInfo}>{`Overall: ${item.posicao}`}</Paragraph>
-                 <Paragraph style={styles.playerInfo}>{`Posição: ${item.posicao}`}</Paragraph>
+                <Paragraph style={styles.playerInfo}>{item.posicao}</Paragraph>
+                <Paragraph style={styles.playerInfo}>{item.posicao}</Paragraph>
               </View>
               <Card.Cover
                 source={{ uri: 'https://img.freepik.com/vetores-premium/silhueta-negra-de-um-jogador-de-futebol-correndo-com-a-bola_566661-3599.jpg?w=2000' }}
-                style={{ height: 220, marginBottom: 3  }}
+                style={{ height: 220, marginBottom: 3 }}
               />
               <Card.Content>
 
-                <Paragraph style={styles.playerInfo}>{`Equipe: ${item.equipe}`}</Paragraph>
+                <Paragraph style={styles.playerInfo}>{item.equipe}</Paragraph>
 
-                <Divider style={{ height: 5}} />
+                <Divider style={{ height: 5 }} />
 
-                <Title>{`Nome: ${item.nome}`}</Title>
+                <Title style={{ fontWeight: 'bold' }}>{item.nome}</Title>
 
                 <Divider style={{ height: 5, marginBottom: 10 }} />
 
