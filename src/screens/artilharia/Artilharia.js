@@ -11,6 +11,7 @@ import { TextInputMask } from 'react-native-masked-text';
 
 import fundo from '../../img/fundo.jpg';
 import { ScrollView } from 'react-native-gesture-handler';
+import { TouchableOpacity } from 'react-native';
 
 export default function Artilharia() {
 
@@ -313,51 +314,37 @@ export default function Artilharia() {
       style={{ flex: 1 }}
     >
       <View style={styles.container}>
-        <TextInput
-          style={styles.input}
-          placeholder="Pesquisar"
-          value={searchTerm}
-          onChangeText={(text) => setSearchTerm(text)}
-        />
-
-        <View style={styles.sortButtons}>
-          <Button
-            mode="contained"
-            onPress={() => setSortField('gols')}
-            style={styles.sortButton}
-          >
-            Sort by Goals
-          </Button>
-          <Button
-            mode="contained"
-            onPress={() => setSortField('assistencias')}
-            style={styles.sortButton}
-          >
-            Sort by Assists
-          </Button>
-        </View>
-
         <FlatList
           data={sortField ? filteredPlayers.sort((a, b) => b[sortField] - a[sortField]) : filteredPlayers}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <Card key={item.id} style={styles.card}>
-              <Card.Title title={`${item.nome}  `} />
-              <Card.Content>
-                <Text>Nome: {item.nome}</Text>
-                <Text>Equipe: {item.equipe}</Text>
-                <Text>Gols: {item.gols}</Text>
-                <Text>Assistências: {item.assistencias}</Text>
-                <Card.Actions>
-                  <Button mode="outlined" onPress={() => editarItem(item)}>
-                    Editar
-                  </Button>
-                  <Button mode="outlined" onPress={() => excluirItem(item)}>
-                    Excluir
-                  </Button>
-                </Card.Actions>
-              </Card.Content>
-            </Card>
+            <View style={styles.row}>
+              <View style={styles.column}>
+                <Text style={styles.cell}>{item.nome}</Text>
+                <Text style={styles.cell}>{item.equipe}</Text>
+              </View>
+
+              <Text style={styles.cell}>{item.gols}</Text>
+              <Text style={styles.cell}>{item.assistencias}</Text>
+
+              <View style={styles.actionCell}>
+                <Button mode="outlined" onPress={() => editarItem(item)}>
+                  Editar
+                </Button>
+                <Button mode="outlined" onPress={() => excluirItem(item)}>
+                  Excluir
+                </Button>
+              </View>
+            </View>
+          )}
+
+          ListHeaderComponent={() => (
+            <View style={styles.header}>
+              <Text style={styles.headerText}>Nome/Equipe</Text>
+              <Text style={styles.headerText}>Gols</Text>
+              <Text style={styles.headerText}>Assistências</Text>
+              <Text style={styles.headerText}>Ações</Text>
+            </View>
           )}
         />
 
@@ -453,5 +440,46 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    backgroundColor: 'white'
+  },
+  column: {
+    flexDirection: 'column',
+  },
+  cell: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  actionCell: {
+    flexDirection: 'column', // Updated to column
+  },
+  actionText: {
+    color: 'blue',
+    textAlign: 'center',
+    marginTop: 8, // Add some spacing between Editar and Excluir
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: '#333',
+    backgroundColor: '#FFFFFF',
+  },
+  headerText: {
+    flex: 1,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+
 });
 

@@ -55,7 +55,7 @@ export default function Jogos() {
         console.log('Dados parseados:', dadosParseados);
 
         if (Array.isArray(dadosParseados)) {
-          const nomesEquipes = dadosParseados.map((item) => item.nome.trim());
+          const nomesEquipes = dadosParseados.map((item) => item.nome);
           console.log('Nomes de Equipes:', nomesEquipes);
 
           const equipesUnicas = [...new Set(nomesEquipes)];

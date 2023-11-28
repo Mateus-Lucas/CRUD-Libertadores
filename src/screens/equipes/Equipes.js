@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Modal, TouchableOpacity, FlatList, Alert, Image, ImageBackground } from 'react-native';
+import { StyleSheet, View, Modal, FlatList, Alert, Image, ImageBackground } from 'react-native';
 import { Button, Text, TextInput, FAB, Card } from 'react-native-paper';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
@@ -7,6 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import fundo from '../../img/fundo.jpg'
+import { BarChart } from 'react-native-chart-kit';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function Equipes() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -257,6 +259,8 @@ export default function Equipes() {
     );
   };
 
+  const jogadoresData = data.map((item) => ({ name: item.nome, jogadores: item.jogadores }));
+
   return (
     <ImageBackground
       source={fundo}
@@ -265,10 +269,25 @@ export default function Equipes() {
     >
 
       <View style={styles.container}>
-        <Image
-          style={styles.imagem}
-          source={require('../../img/equipes.jpg')}
-        />
+        <ScrollView>
+          <ScrollView horizontal={true}>
+
+            <BarChart
+              data={{
+                labels: jogadoresData.map((item) => item.name),
+                datasets: [{ data: jogadoresData.map((item) => item.jogadores) }],
+              }}
+              width={1000}
+              height={400}
+              chartConfig={{
+                backgroundGradientFrom: '#1E2923',
+                backgroundGradientTo: '#08130D',
+                color: (opacity = 1) => `rgba(26, 255, 146, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+              }}
+            />
+          </ScrollView>
+        </ScrollView>
         <FlatList
           data={data}
           keyExtractor={(item) => item.id}
@@ -342,7 +361,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   voltarButton: {
-    backgroundColor: 'red', 
+    backgroundColor: 'red',
   },
   card: {
     marginVertical: 8,
