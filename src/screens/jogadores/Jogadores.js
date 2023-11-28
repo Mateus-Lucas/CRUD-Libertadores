@@ -367,7 +367,7 @@ export default function Jogadores() {
         />
 
         <FlatList
-          data={filteredPlayers.filter(player => player.equipe.toLowerCase().includes(searchTerm.toLowerCase()))}
+          data={filteredPlayers.filter(player => player.nome.toLowerCase().includes(searchTerm.toLowerCase()))}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Card key={item.id} style={styles.card}>
