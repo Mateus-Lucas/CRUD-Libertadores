@@ -11,6 +11,7 @@ import fundo from '../../img/fundo.jpg';
 import { TextInputMask } from 'react-native-masked-text';
 
 export default function Jogos() {
+
   const [modalVisible, setModalVisible] = useState(false);
   const [data, setData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -27,38 +28,47 @@ export default function Jogos() {
   });
 
   useEffect(() => {
-    const carregarDadosDoArmazenamentEquipes = async () => {
+    const carregarDadosDoArmazenamentoEquipes = async () => {
       try {
-        const dadosArmazenados = await AsyncStorage.getItem('formData');
-
-        if (dadosArmazenados) {
-          const dadosParseados = JSON.parse(dadosArmazenados);
-
-          if (Array.isArray(dadosParseados)) {
-            setData(dadosParseados);
-          } else if (typeof dadosParseados === 'object') {
-            setData([dadosParseados]);
-          } else {
-            console.error('Dados armazenados não são um array ou objeto:', dadosParseados);
-          }
-        }
-
-        const equipesArmazenadas = await AsyncStorage.getItem('equipes');
+        const equipesArmazenadas = await AsyncStorage.getItem('formData');
+        console.log(equipesArmazenadas)
         if (equipesArmazenadas) {
           const equipesParseadas = JSON.parse(equipesArmazenadas);
-          setEquipes(equipesParseadas);
-
-          // Extraia os nomes das equipes para popular equipeNomes
-          const nomesDasEquipes = equipesParseadas.map(equipe => equipe.nome);
-          setEquipeNomes(nomesDasEquipes);
+          setEquipes(equipesParseadas.map(equipe => equipe.nome));
         }
       } catch (erro) {
         console.error('Erro ao carregar os dados do AsyncStorage:', erro);
       }
     };
 
-    carregarDadosDoArmazenamentEquipes();
+    carregarDadosDoArmazenamentoEquipes();
+    carregarDadosDoArmazenamentoJogos();
   }, []);
+
+  const carregarDadosDoArmazenamentoJogos = async () => {
+    try {
+      const dadosArmazenados = await AsyncStorage.getItem('formDataJogos');
+      console.log('Conteúdo do AsyncStorage (formDataJogos):', dadosArmazenados);
+
+      if (dadosArmazenados) {
+        const dadosParseados = JSON.parse(dadosArmazenados);
+        console.log('Dados parseados:', dadosParseados);
+
+        if (Array.isArray(dadosParseados)) {
+          const nomesEquipes = dadosParseados.map((item) => item.nome.trim());
+          console.log('Nomes de Equipes:', nomesEquipes);
+
+          const equipesUnicas = [...new Set(nomesEquipes)];
+          console.log('Equipes únicas:', equipesUnicas);
+
+          setEquipeNomes(equipesUnicas);
+        }
+      }
+    } catch (erro) {
+      console.error('Erro ao carregar os dados do AsyncStorage:', erro);
+    }
+  };
+
 
   const adicionarItem = async (item) => {
     try {
@@ -78,9 +88,9 @@ export default function Jogos() {
         return;
       }
 
-      setData([...data, novoItem]);
+      setData((prevData) => [...prevData, novoItem]);
 
-      await AsyncStorage.setItem('formData', JSON.stringify([...data, novoItem]));
+      await AsyncStorage.setItem('formDataJogos', JSON.stringify([...data, novoItem]));
 
       Toast.show({
         type: 'success',
@@ -116,10 +126,10 @@ export default function Jogos() {
           onPress: async () => {
             const dadosAtualizados = data.filter((i) => i.id !== item.id);
             setData(dadosAtualizados);
-            await AsyncStorage.setItem('formData', JSON.stringify(dadosAtualizados));
+            await AsyncStorage.setItem('formDataJogos', JSON.stringify(dadosAtualizados));
             Toast.show({
               type: 'success',
-              text1: 'Item excluído com sucesso!',
+              text1: 'Jogo excluído com sucesso!',
             });
           },
         },
@@ -147,14 +157,14 @@ export default function Jogos() {
             item.id === selectedItem.id ? { ...item, ...valores } : item
           );
           setData(dadosAtualizados);
-          await AsyncStorage.setItem('formData', JSON.stringify(dadosAtualizados));
+          await AsyncStorage.setItem('formDataJogos', JSON.stringify(dadosAtualizados));
         } else {
           adicionarItem({ id: Date.now().toString(), ...valores });
         }
 
         Toast.show({
           type: 'success',
-          text1: 'Dados salvos com sucesso!',
+          text1: 'Jogo salvo com sucesso!',
         });
         resetForm();
         aoFechar();
@@ -178,40 +188,46 @@ export default function Jogos() {
             <Text style={styles.title}>{selectedItem ? 'Editar Jogo' : 'Novo Jogo'}</Text>
             <Formik
               initialValues={{
-                equipeA: selectedEquipeA,
-                equipeB: selectedEquipeB,
-                data: '',
-                horario: '',
+                equipeA: selectedEquipeA || '',
+                equipeB: selectedEquipeB || '',
+                data: valoresFormulario?.data || '', // Aqui foi adicionada a inicialização correta
+                horario: valoresFormulario?.horario || '',
               }}
               validationSchema={validationSchema}
               onSubmit={enviar}
             >
-              {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+              {({ handleChange, handleBlur, handleSubmit, values, errors, touched, setFieldValue }) => (
                 <View>
+
                   <Picker
                     selectedValue={values.equipeA}
-                    onValueChange={(itemValue) => handleChange('equipeA')(itemValue)}
-                    style={styles.dropdownButton}
+                    onValueChange={(itemValue) => {
+                      handleChange('equipeA')(itemValue);
+                      setFieldValue('equipeA', itemValue);
+                    }}
+                    style={styles.picker}
                   >
                     <Picker.Item label="Selecione a equipe" value="" />
-                    {equipeNomes.map((nomeEquipe, index) => (
-                      <Picker.Item key={index} label={nomeEquipe} value={nomeEquipe} />
+                    {equipes.map((equipe, index) => (
+                      <Picker.Item key={index} label={equipe} value={equipe} />
                     ))}
                   </Picker>
-                  {touched.equipeA && errors.equipeA && (
-                    <Text style={{ color: 'red', textAlign: 'center' }}>{errors.equipeA}</Text>
-                  )}
 
                   <Picker
                     selectedValue={values.equipeB}
-                    onValueChange={(itemValue) => handleChange('equipeB')(itemValue)}
-                    style={styles.dropdownButton}
+                    onValueChange={(itemValue) => {
+                      handleChange('equipeB')(itemValue);
+                      setFieldValue('equipeB', itemValue);
+                    }}
+                    style={styles.picker}
                   >
                     <Picker.Item label="Selecione a equipe" value="" />
-                    {equipeNomes.map((nomeEquipe, index) => (
-                      <Picker.Item key={index} label={nomeEquipe} value={nomeEquipe} />
+                    {equipes.map((equipe, index) => (
+                      <Picker.Item key={index} label={equipe} value={equipe} />
                     ))}
                   </Picker>
+
+
                   {touched.equipeB && errors.equipeB && (
                     <Text style={{ color: 'red', textAlign: 'center' }}>{errors.equipeB}</Text>
                   )}
@@ -258,11 +274,25 @@ export default function Jogos() {
                     <Text style={{ color: 'red', textAlign: 'center' }}>{errors.horario}</Text>
                   )}
 
-                  <Card.Actions style={styles.cardActions}>
-                    <Button mode="outlined" onPress={handleSubmit}>
-                      {selectedItem ? 'Salvar Alterações' : 'Adicionar Jogo'}
+                  <View style={styles.containerButton}>
+                    <Button
+                      mode='contained'
+                      onPress={aoFechar}
+                      style={[styles.button, styles.voltarButton]}
+                    >
+                      <Icon name="arrow-left" size={20} color="white" />
+                      {'  '}Voltar
                     </Button>
-                  </Card.Actions>
+                    <Button
+                      mode="contained"
+                      onPress={handleSubmit}
+                      style={styles.button}
+                    >
+                      <Icon name="check" size={20} color="white" />
+                      {'  '} {selectedItem ? 'Salvar Jogo' : 'Cadastrar Jogo'}
+                    </Button>
+                  </View>
+
                 </View>
               )}
             </Formik>
@@ -279,16 +309,12 @@ export default function Jogos() {
       style={{ flex: 1 }}
     >
       <View style={styles.container}>
-        <Image
-          style={styles.imagem}
-          source={require('../../img/equipes.jpg')}
-        />
         <FlatList
           data={data}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Card key={item.id} style={styles.card}>
-              <Card.Title title={`${item.equipeA} vs ${item.equipeB}  `}
+              <Card.Title title={`${item.equipeA}vs ${item.equipeB}  `}
                 left={(props) => (
                   <Icon name="soccer-ball-o" size={30} color="black" {...props} />
                 )}
@@ -368,9 +394,6 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     backgroundColor: '#F8F8F8',
   },
-  button: {
-    marginTop: 16,
-  },
   card: {
     marginVertical: 8,
   },
@@ -382,5 +405,17 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
+  },
+  picker: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: 'purple',
+    borderRadius: 8,
+    color: 'black',
+    paddingRight: 30,
+    backgroundColor: 'white',
+    marginTop: 10
   },
 });
