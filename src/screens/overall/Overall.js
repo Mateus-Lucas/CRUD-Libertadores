@@ -471,7 +471,6 @@ export default function Overall() {
                       <Icon name="arrow-left" size={20} color="white" />
                       {'  '}Voltar
                     </Button>
-
                     <Button
                       mode="contained"
                       onPress={handleSubmit}
@@ -501,53 +500,72 @@ export default function Overall() {
         <FlatList
           data={data}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <Card key={item.id} style={styles.card}>
-              <View style={styles.statsContainer}>
-                <Paragraph style={styles.playerInfo}>{item.posicao}</Paragraph>
-                <Paragraph style={styles.playerInfo}>{item.posicao}</Paragraph>
-              </View>
-              <Card.Cover
-                source={{ uri: 'https://img.freepik.com/vetores-premium/silhueta-negra-de-um-jogador-de-futebol-correndo-com-a-bola_566661-3599.jpg?w=2000' }}
-                style={{ height: 220, marginBottom: 3 }}
-              />
-              <Card.Content>
+          renderItem={({ item }) => {
 
-                <Paragraph style={styles.playerInfo}>{item.equipe}</Paragraph>
+            const calcularOverall = (jogador) => {
+              const valores = ['velocidade', 'finalizacao', 'passe', 'drible', 'defesa', 'fisico'];
 
-                <Divider style={{ height: 5 }} />
-
-                <Title style={{ fontWeight: 'bold' }}>{item.nome}</Title>
-
-                <Divider style={{ height: 5, marginBottom: 10 }} />
-
+              valores.forEach(chave => {
+                console.log(`${jogador.nome} - ${chave}: ${jogador[chave]}`);
+              });
+            
+              const soma = valores.reduce((acc, chave) => acc + jogador[chave], 0);
+              const overallCompleto = soma / 9.5; // Corrigido para dividir pelo número total de atributos
+              const overall = overallCompleto / 1000000000
+              console.log(`Calculando overall para ${jogador.nome}:`, overall);
+              console.log(soma);
+            
+              return parseFloat(overall);
+            };
+            
+            return (
+              <Card key={item.id} style={styles.card}>
                 <View style={styles.statsContainer}>
-                  <Paragraph style={styles.stat}>{`VEL: ${item.velocidade}`}</Paragraph>
-                  <Paragraph style={styles.stat}>{`FIN: ${item.finalizacao}`}</Paragraph>
+        
+                <Paragraph style={styles.statOverall}>{calcularOverall(item).toFixed(0)}</Paragraph>
+                  <Paragraph style={styles.playerInfo}>{item.posicao}</Paragraph>
                 </View>
+                <Card.Cover
+                  source={{ uri: 'https://img.freepik.com/vetores-premium/silhueta-negra-de-um-jogador-de-futebol-correndo-com-a-bola_566661-3599.jpg?w=2000' }}
+                  style={{ height: 220, marginBottom: 3 }}
+                />
+                <Card.Content>
 
-                <Divider style={{ height: 2, marginBottom: 10 }} />
+                  <Paragraph style={styles.playerInfo}>{item.equipe}</Paragraph>
 
-                <View style={styles.statsContainer}>
-                  <Paragraph style={styles.stat}>{`PAS: ${item.passe}`}</Paragraph>
-                  <Paragraph style={styles.stat}>{`DRI: ${item.drible}`}</Paragraph>
-                </View>
+                  <Divider style={{ height: 5 }} />
 
-                <Divider style={{ height: 2, marginBottom: 10 }} />
+                  <Title style={{ fontWeight: 'bold' }}>{item.nome}</Title>
 
-                <View style={styles.statsContainer}>
-                  <Paragraph style={styles.stat}>{`DEF: ${item.defesa}`}</Paragraph>
-                  <Paragraph style={styles.stat}>{`FIS: ${item.fisico}`}</Paragraph>
-                </View>
+                  <Divider style={{ height: 5, marginBottom: 10 }} />
 
-              </Card.Content>
-              <Card.Actions style={styles.cardActions}>
-                <Button onPress={() => editarItem(item)}>Editar</Button>
-                <Button onPress={() => excluirItem(item)}>Excluir</Button>
-              </Card.Actions>
-            </Card>
+                  <View style={styles.statsContainer}>
+                    <Paragraph style={styles.stat}>{`VEL: ${item.velocidade}`}</Paragraph>
+                    <Paragraph style={styles.stat}>{`FIN: ${item.finalizacao}`}</Paragraph>
+                  </View>
 
-          )}
+                  <Divider style={{ height: 2, marginBottom: 10 }} />
+
+                  <View style={styles.statsContainer}>
+                    <Paragraph style={styles.stat}>{`PAS: ${item.passe}`}</Paragraph>
+                    <Paragraph style={styles.stat}>{`DRI: ${item.drible}`}</Paragraph>
+                  </View>
+
+                  <Divider style={{ height: 2, marginBottom: 10 }} />
+
+                  <View style={styles.statsContainer}>
+                    <Paragraph style={styles.stat}>{`DEF: ${item.defesa}`}</Paragraph>
+                    <Paragraph style={styles.stat}>{`FIS: ${item.fisico}`}</Paragraph>
+                  </View>
+
+                </Card.Content>
+                <Card.Actions style={styles.cardActions}>
+                  <Button onPress={() => editarItem(item)}>Editar</Button>
+                  <Button onPress={() => excluirItem(item)}>Excluir</Button>
+                </Card.Actions>
+              </Card>
+            );
+          }}
         />
 
         <FAB
@@ -605,6 +623,7 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 16,
+    margin: 3
   },
   closeButton: {
     color: 'blue',
@@ -646,10 +665,14 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
   },
   stat: {
     fontSize: 20
+  },
+  statOverall: {
+    fontSize: 20,
+    fontWeight: 'bold'
   }
 });
 
