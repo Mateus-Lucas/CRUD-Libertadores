@@ -87,15 +87,16 @@ export default function Artilharia() {
   const carregarDadosDoArmazenamentoJogadores = async () => {
     try {
       const dadosArmazenados = await AsyncStorage.getItem('formDataJogadores');
-      console.log('Conteúdo do AsyncStorage (formDataJogadores):', dadosArmazenados);
+      console.log('Conteúdo do AsyncStorage (formData):', dadosArmazenados);
 
       if (dadosArmazenados) {
         const dadosParseados = JSON.parse(dadosArmazenados);
+        console.log('Dados parseados:', dadosParseados);
 
         if (Array.isArray(dadosParseados)) {
-          setData(dadosParseados);
-          setFilteredPlayers(dadosParseados);
+          setJogadores(dadosParseados);  // Atualize jogadores em vez de equipeNomes
         }
+
       }
     } catch (erro) {
       console.error('Erro ao carregar os dados do AsyncStorage:', erro);
@@ -225,13 +226,10 @@ export default function Artilharia() {
             >
               {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <View>
-                  <Text style={styles.label}>Jogador</Text>
                   <Picker
                     selectedValue={jogadorSelecionado ? jogadorSelecionado.nome : ''}
                     onValueChange={(nome) => {
                       const jogador = jogadores.find(j => j.nome === nome);
-                      console.log('Valor selecionado no Picker:', nome);
-                      console.log('Jogador correspondente:', jogador);
                       setJogadorSelecionado(jogador);
                       handleChange('nome')(nome);
                     }}
@@ -243,7 +241,6 @@ export default function Artilharia() {
                     ))}
                   </Picker>
 
-                  <Text style={styles.label}>Equipe</Text>
                   <Picker
                     selectedValue={selectedEquipe}
                     onValueChange={(itemValue) => setSelectedEquipe(itemValue)}
@@ -291,12 +288,13 @@ export default function Artilharia() {
 
                     <Button
                       mode="contained"
-                      onPress={handleSubmit}
+                      onPress={() => jogadorSelecionado ? handleUpdatePlayer({ ...values, equipe: selectedEquipe }) : adicionarJogador({ ...values, equipe: selectedEquipe })}
                       style={styles.button}
                     >
                       <Icon name="check" size={20} color="white" />
-                      {'  '} {editPlayerData ? 'Atualizar Jogador' : 'Cadastrar Jogador'}
+                      {'  '} {jogadorSelecionado ? 'Atualizar Artilheiro' : 'Cadastrar Artilheiro'}
                     </Button>
+
                   </View>
                 </View>
               )}
@@ -400,11 +398,7 @@ const styles = StyleSheet.create({
     color: 'black',
     paddingRight: 30,
     backgroundColor: 'white',
-  },
-  label: {
-    fontSize: 16,
-    marginTop: 8,
-    color: 'white',
+    marginTop: 10
   },
   errorMessage: {
     color: 'red',

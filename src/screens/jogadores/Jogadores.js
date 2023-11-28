@@ -13,7 +13,6 @@ import fundo from '../../img/fundo.jpg';
 import { ScrollView } from 'react-native-gesture-handler';
 
 export default function Jogadores() {
-
   const [modalVisible, setModalVisible] = useState(false);
   const [data, setData] = useState([]);
   const [selectedEquipe, setSelectedEquipe] = useState('');
@@ -83,25 +82,24 @@ export default function Jogadores() {
     }
   };
 
-
   const adicionarJogador = async (jogador) => {
     try {
       const novoJogador = {
         ...jogador,
         id: `jogador_${data.length + 1}_${Date.now()}`,
       };
-  
+
       // Atualize o estado 'data' e 'filteredPlayers'
       setData((prevData) => [...prevData, novoJogador]);
-      setFilteredPlayers((prevPlayers) => [...prevPlayers, novoJogador]);
-  
+      updateDataAndFilteredPlayers([...data, novoJogador]);
+
       // Atualize o AsyncStorage apenas com o estado 'data'
       await AsyncStorage.setItem('formDataJogadores', JSON.stringify([...data, novoJogador]));
-  
+
       // Atualize o estado 'equipeNomes' com as equipes únicas da lista de jogadores
       const nomesEquipesAtualizados = [...new Set([...equipeNomes, jogador.equipe])];
       setEquipeNomes(nomesEquipesAtualizados);
-  
+
       Toast.show({
         type: 'success',
         text1: 'Jogador cadastrado com sucesso!',
@@ -114,7 +112,12 @@ export default function Jogadores() {
       });
     }
   };
-  
+
+  const updateEquipeNomes = (dadosAtualizados) => {
+    const nomesEquipesAtualizados = dadosAtualizados.map((item) => item.equipe);
+    const equipesUnicasAtualizadas = [...new Set(nomesEquipesAtualizados)];
+    setEquipeNomes(equipesUnicasAtualizadas);
+  };
 
   const excluirItem = async (item) => {
     Alert.alert(
@@ -129,14 +132,11 @@ export default function Jogadores() {
           text: 'Excluir',
           onPress: async () => {
             const dadosAtualizados = data.filter((i) => i.id !== item.id);
-            setData(dadosAtualizados);
-            setFilteredPlayers(dadosAtualizados);
-  
+            updateDataAndFilteredPlayers(dadosAtualizados);
+
             // Atualize o estado 'equipeNomes' após a exclusão
-            const nomesEquipesAtualizados = dadosAtualizados.map((item) => item.equipe);
-            const equipesUnicasAtualizadas = [...new Set(nomesEquipesAtualizados)];
-            setEquipeNomes(equipesUnicasAtualizadas);
-  
+            updateEquipeNomes(dadosAtualizados);
+
             await AsyncStorage.setItem('formDataJogadores', JSON.stringify(dadosAtualizados));
             Toast.show({
               type: 'success',
@@ -147,7 +147,7 @@ export default function Jogadores() {
       ],
       { cancelable: true }
     );
-  };  
+  };
 
   const editarItem = (item) => {
     setEditPlayerData(item);
@@ -159,12 +159,11 @@ export default function Jogadores() {
       const updatedData = data.map((item) =>
         item.id === updatedPlayer.id ? updatedPlayer : item
       );
-  
-      setData(updatedData);
-      setFilteredPlayers(updatedData); // Adicione esta linha para atualizar filteredPlayers
-  
+
+      updateDataAndFilteredPlayers(updatedData);
+
       await AsyncStorage.setItem('formDataJogadores', JSON.stringify(updatedData));
-  
+
       Toast.show({
         type: 'success',
         text1: 'Jogador atualizado com sucesso!',
@@ -176,6 +175,11 @@ export default function Jogadores() {
         text1: 'Erro ao atualizar o jogador. Tente novamente.',
       });
     }
+  };
+
+  const updateDataAndFilteredPlayers = (newData) => {
+    setData(newData);
+    setFilteredPlayers(newData);
   };
 
   const ModalFormulario = ({ visivel, aoFechar, editPlayerData }) => {
