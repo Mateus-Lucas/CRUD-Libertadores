@@ -94,7 +94,7 @@ export default function Jogos() {
 
       Toast.show({
         type: 'success',
-        text1: 'Item adicionado com sucesso!',
+        text1: 'Jogo adicionado com sucesso!',
       });
     } catch (erro) {
       console.error('Erro ao adicionar o item:', erro);
@@ -309,6 +309,10 @@ export default function Jogos() {
       style={{ flex: 1 }}
     >
       <View style={styles.container}>
+      <Image
+          style={styles.imagem}
+          source={require('../../img/equipes.jpg')}
+        />
         <FlatList
           data={data}
           keyExtractor={(item) => item.id}
